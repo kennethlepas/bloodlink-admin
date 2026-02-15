@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Blood Banks - BloodLink Admin{% endblock %}
+{% block page_title %}Blood Banks{% endblock %}
+{% block page_subtitle %}Manage blood bank facilities and inventory{% endblock %}
+
+{% block header_actions %}
+<button class="btn-primary" id="addBloodBankBtn">
+    <span>+</span>
+    <span>Add Blood Bank</span>
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div class="card-header">
+        <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-box" id="bloodBanksSearch"
+                placeholder="Search blood banks by name, address, or phone...">
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Blood Bank</th>
+                    <th>Location</th>
+                    <th>Contact</th>
+                    <th>Coordinates</th>
+                    <th>Available Types</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="bloodBanksTableBody">
+                <tr>
+                    <td colspan="6" class="empty-state">
+                        <div class="empty-state-icon">🏥</div>
+                        <p>No blood banks registered yet</p>
+                        <button class="btn-secondary" onclick="document.getElementById('addBloodBankBtn').click()">Add
+                            Your First Blood Bank</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<!-- Add/Edit Blood Bank Modal -->
+<div id="addBloodBankModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitle">Add Blood Bank</h2>
+            <button class="modal-close" id="closeBloodBankModal">✕</button>
+        </div>
+
+        <form id="bloodBankForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Blood Bank Name *</label>
+                    <input type="text" id="bankName" required placeholder="e.g., City Central Blood Bank">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Address *</label>
+                    <input type="text" id="bankAddress" required placeholder="Full street address">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Phone Number *</label>
+                    <input type="tel" id="bankPhone" required placeholder="+254 XXX XXX XXX">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="bankEmail" placeholder="contact@bloodbank.com">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Latitude *</label>
+                    <input type="number" id="bankLatitude" required step="0.000001" placeholder="-1.286389">
+                </div>
+                <div class="form-group">
+                    <label>Longitude *</label>
+                    <input type="number" id="bankLongitude" required step="0.000001" placeholder="36.817223">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="bankVerified">
+                        <span>Mark as Verified</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="submit" class="btn-primary">
+                    <span>💾</span>
+                    <span>Save Blood Bank</span>
+                </button>
+                <button type="button" class="btn-secondary" id="cancelBloodBankModal">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Inventory Management Modal -->
+<div id="inventoryModal" class="modal-overlay">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <div>
+                <h2>Manage Blood Inventory</h2>
+                <p class="modal-subtitle" id="inventoryModalSubtitle"></p>
+            </div>
+            <button class="modal-close" id="closeInventoryModal">✕</button>
+        </div>
+
+        <form id="inventoryForm">
+            <div class="inventory-grid">
+                <!-- A+ -->
+                <div class="inventory-item">
+                    <div class="inventory-header">
+                        <span class="blood-type-badge badge-a-pos">A+</span>
+                        <span class="inventory-status" id="status-A+">⚫</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Units Available</label>
+                        <input type="number" id="units-A+" min="0" value="0" required>
+                    </div>
+                    <div class="inventory-meta" id="meta-A+">Never updated</div>
+                </div>
+
+                <!-- A- -->
+                <div class="inventory-item">
+                    <div class="inventory-header">
+                        <span class="blood-type-badge badge-a-neg">A-</span>
+                        <span class="inventory-status" id="status-A-">⚫</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Units Available</label>
+                        <input type="number" id="units-A-" min="0" value="0" required>
+                    </div>
+                    <div class="inventory-meta" id="meta-A-">Never updated</div>
+                </div>
+
+                <!-- B+ -->
+                <div class="inventory-item">
+                    <div class="inventory-header">
+                        <span class="blood-type-badge badge-b-pos">B+</span>
+                        <span class="inventory-status" id="status-B+">⚫</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Units Available</label>
+                        <input type="number" id="units-B+" min="0" value="0" required>
+                    </div>
+                    <div class="inventory-meta" id="meta-B+">Never updated</div>
+                </div>
+
+                <!-- B- -->
+                <div class="inventory-item">
+                    <div class="inventory-header">
+                        <span class="blood-type-badge badge-b-neg">B-</span>
+                        <span class="inventory-status" id="status-B-">⚫</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Units Available</label>
+                        <input type="number" id="units-B-" min="0" value="0" required>
+                    </div>
+                    <div class="inventory-meta" id="meta-B-">Never updated</div>
+                </div>
+
+                <!-- AB+ -->
+                <div class="inventory-item">
+                    <div class="inventory-header">
+                        <span class="blood-type-badge badge-ab-pos">AB+</span>
+                        <span class="inventory-status" id="status-AB+">⚫</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Units Available</label>
+                        <input type="number" id="units-AB+" min="0" value="0" required>
+                    </div>
+                    <div class="inventory-meta" id="meta-AB+">Never updated</div>
+                </div>
+
+                <!-- AB- -->
+                <div class="inventory-item">
+                    <div class="inventory-header">
+                        <span class="blood-type-badge badge-ab-neg">AB-</span>
+                        <span class="inventory-status" id="status-AB-">⚫</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Units Available</label>
+                        <input type="number" id="units-AB-" min="0" value="0" required>
+                    </div>
+                    <div class="inventory-meta" id="meta-AB-">Never updated</div>
+                </div>
+
+                <!-- O+ -->
+                <div class="inventory-item">
+                    <div class="inventory-header">
+                        <span class="blood-type-badge badge-o-pos">O+</span>
+                        <span class="inventory-status" id="status-O+">⚫</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Units Available</label>
+                        <input type="number" id="units-O+" min="0" value="0" required>
+                    </div>
+                    <div class="inventory-meta" id="meta-O+">Never updated</div>
+                </div>
+
+                <!-- O- -->
+                <div class="inventory-item">
+                    <div class="inventory-header">
+                        <span class="blood-type-badge badge-o-neg">O-</span>
+                        <span class="inventory-status" id="status-O-">⚫</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Units Available</label>
+                        <input type="number" id="units-O-" min="0" value="0" required>
+                    </div>
+                    <div class="inventory-meta" id="meta-O-">Never updated</div>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="submit" class="btn-primary">
+                    <span>💾</span>
+                    <span>Save Inventory</span>
+                </button>
+                <button type="button" class="btn-secondary" id="cancelInventoryModal">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='bloodbank.js') }}"></script>
+{% endblock %}

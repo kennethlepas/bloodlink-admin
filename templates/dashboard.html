@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - BloodLink Admin{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Overview of blood bank operations{% endblock %}
+
+{% block content %}
+<!-- Statistics Cards -->
+<div class="stats-grid">
+    <div class="stat-card stat-primary">
+        <div class="stat-icon">🩸</div>
+        <div class="stat-details">
+            <div class="stat-label">Total Blood Units</div>
+            <div class="stat-value" id="totalUnits">0</div>
+            <div class="stat-change">Across all blood banks</div>
+        </div>
+    </div>
+
+    <div class="stat-card stat-info">
+        <div class="stat-icon">🏥</div>
+        <div class="stat-details">
+            <div class="stat-label">Blood Banks</div>
+            <div class="stat-value" id="totalBloodBanks">0</div>
+            <div class="stat-change">Registered facilities</div>
+        </div>
+    </div>
+
+    <div class="stat-card stat-success">
+        <div class="stat-icon">👥</div>
+        <div class="stat-details">
+            <div class="stat-label">Verified Donors</div>
+            <div class="stat-value" id="verifiedDonors">0</div>
+            <div class="stat-change"><span id="totalDonors">0</span> total donors</div>
+        </div>
+    </div>
+
+    <div class="stat-card stat-warning">
+        <div class="stat-icon">📋</div>
+        <div class="stat-details">
+            <div class="stat-label">Pending Requests</div>
+            <div class="stat-value" id="pendingRequests">0</div>
+            <div class="stat-change">Requires attention</div>
+        </div>
+    </div>
+
+    <div class="stat-card stat-accent">
+        <div class="stat-icon">⭐</div>
+        <div class="stat-details">
+            <div class="stat-label">Pending Reviews</div>
+            <div class="stat-value" id="pendingReviews">0</div>
+            <div class="stat-change">Awaiting approval</div>
+        </div>
+    </div>
+</div>
+
+<!-- Blood Type Overview -->
+<div class="content-card">
+    <div class="card-header">
+        <h2 class="card-title">Blood Type Availability</h2>
+        <p class="card-subtitle">Current stock levels across all blood banks</p>
+    </div>
+    <div class="blood-type-grid" id="bloodTypeOverview">
+        <!-- Populated by JavaScript -->
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions-grid">
+    <a href="/blood-banks" class="quick-action-card">
+        <span class="quick-action-icon">🏥</span>
+        <h3>Manage Blood Banks</h3>
+        <p>Add, edit, or update blood bank information</p>
+    </a>
+
+    <a href="/donors" class="quick-action-card">
+        <span class="quick-action-icon">👥</span>
+        <h3>Verify Donors</h3>
+        <p>Review and approve donor registrations</p>
+    </a>
+
+    <a href="/requests" class="quick-action-card">
+        <span class="quick-action-icon">📋</span>
+        <h3>Blood Requests</h3>
+        <p>Manage and fulfill blood requests</p>
+    </a>
+
+    <a href="/reviews" class="quick-action-card">
+        <span class="quick-action-icon">⭐</span>
+        <h3>Moderate Reviews</h3>
+        <p>Approve or reject user reviews</p>
+    </a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+{% endblock %}

@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BloodLink Admin Panel</title>
-    <!-- Updated CSS link for Flask -->
+    <title>BloodLink Admin - Login</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-auth-compat.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-database-compat.min.js"></script>
+    <!-- Firebase SDK v9 Compat -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
+
 <body>
     <!-- Loading Screen -->
     <div id="loading" class="loading-container">
@@ -17,228 +19,47 @@
         <p>Loading...</p>
     </div>
 
-    <!-- Login Container -->
-    <div id="loginContainer" class="login-container hidden">
-        <div class="login-card">
-            <div class="login-header">
-                <div class="logo-icon">🩸</div>
-                <h1>BloodLink Admin</h1>
-                <p>Sign in to manage blood bank operations</p>
+    <!-- Welcome/Login Container -->
+    <div id="loginContainer" class="welcome-container hidden">
+        <div class="welcome-overlay"></div>
+        <div class="welcome-content">
+            <div class="login-card">
+                <div class="login-header">
+                    <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="BloodLink Logo"
+                        class="logo-image-large">
+                    <h1>BloodLink Admin Portal</h1>
+                    <p>Manage blood bank operations and save lives</p>
+                </div>
+
+                <div id="loginError" class="error-message hidden"></div>
+
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="email" placeholder="admin@bloodlink.com" required autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="password" placeholder="Enter your password" required
+                            autocomplete="current-password">
+                    </div>
+                    <button type="submit" class="login-btn" id="loginBtn">
+                        <span>Sign In</span>
+                        <span class="btn-arrow">→</span>
+                    </button>
+                </form>
+
+                <div class="login-footer">
+                    <p>Secure admin access • BloodLink © 2024</p>
+                </div>
             </div>
-            <div id="loginError" class="error-message hidden"></div>
-            <form id="loginForm">
-                <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="email" id="email" placeholder="admin@bloodlink.com" required>
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="password" placeholder="Enter your password" required>
-                </div>
-                <button type="submit" class="login-btn" id="loginBtn">Sign In</button>
-            </form>
         </div>
     </div>
 
-    <!-- Admin Container -->
-    <div id="adminContainer" class="admin-container">
-        <!-- Header -->
-        <header class="admin-header">
-            <div class="header-content">
-                <div class="logo">
-                    <div class="logo-icon">🩸</div>
-                    <h1>BloodLink Admin</h1>
-                </div>
-                <div class="user-info">
-                    <span class="user-email" id="userEmail"></span>
-                    <button class="logout-btn" id="logoutBtn">Logout</button>
-                </div>
-            </div>
-        </header>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Navigation Tabs -->
-            <div class="tabs">
-                <button class="tab active" data-tab="dashboard">📊 Dashboard</button>
-                <button class="tab" data-tab="inventory">🩸 Blood Inventory</button>
-                <button class="tab" data-tab="donors">👥 Donors</button>
-                <button class="tab" data-tab="requests">📋 Blood Requests</button>
-            </div>
-
-            <!-- Dashboard Tab -->
-            <div id="dashboardTab" class="tab-content">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <span class="stat-title">Total Blood Units</span>
-                            <div class="stat-icon" style="background: #dbeafe; color: #1e40af;">🩸</div>
-                        </div>
-                        <div class="stat-value" id="totalUnits">0</div>
-                        <div class="stat-change">Available across all types</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <span class="stat-title">Verified Donors</span>
-                            <div class="stat-icon" style="background: #d1fae5; color: #065f46;">👥</div>
-                        </div>
-                        <div class="stat-value" id="verifiedDonors">0</div>
-                        <div class="stat-change"><span id="totalDonors">0</span> total donors</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <span class="stat-title">Pending Requests</span>
-                            <div class="stat-icon" style="background: #fef3c7; color: #78350f;">📋</div>
-                        </div>
-                        <div class="stat-value" id="pendingRequests">0</div>
-                        <div class="stat-change">Requires immediate attention</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <span class="stat-title">Critical Stock</span>
-                            <div class="stat-icon" style="background: #fee2e2; color: #991b1b;">⚠️</div>
-                        </div>
-                        <div class="stat-value" id="criticalStock">0</div>
-                        <div class="stat-change">Blood types below 20 units</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Inventory Tab -->
-            <div id="inventoryTab" class="tab-content hidden">
-                <div class="content-card">
-                    <div class="card-header">
-                        <h2 class="card-title">Blood Inventory</h2>
-                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                            <input type="text" class="search-box" id="inventorySearch" placeholder="Search blood type or location...">
-                            <button class="add-btn" id="addInventoryBtn">+ Add Stock</button>
-                        </div>
-                    </div>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Blood Type</th>
-                                    <th>Units Available</th>
-                                    <th>Status</th>
-                                    <th>Expiry Date</th>
-                                    <th>Location</th>
-                                    <th>Last Updated</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="inventoryTableBody">
-                                <tr>
-                                    <td colspan="7" class="empty-state">No inventory data available</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Donors Tab -->
-            <div id="donorsTab" class="tab-content hidden">
-                <div class="content-card">
-                    <div class="card-header">
-                        <h2 class="card-title">Registered Donors</h2>
-                        <input type="text" class="search-box" id="donorsSearch" placeholder="Search donors...">
-                    </div>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Phone</th>
-                                    <th>Blood Type</th>
-                                    <th>Weight (kg)</th>
-                                    <th>Total Donations</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="donorsTableBody">
-                                <tr>
-                                    <td colspan="8" class="empty-state">No donors registered yet</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Requests Tab -->
-            <div id="requestsTab" class="tab-content hidden">
-                <div class="content-card">
-                    <div class="card-header">
-                        <h2 class="card-title">Blood Requests</h2>
-                        <input type="text" class="search-box" id="requestsSearch" placeholder="Search requests...">
-                    </div>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Requester</th>
-                                    <th>Blood Type</th>
-                                    <th>Urgency</th>
-                                    <th>Location</th>
-                                    <th>Time</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="requestsTableBody">
-                                <tr>
-                                    <td colspan="7" class="empty-state">No blood requests at this time</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <!-- Add Inventory Modal -->
-    <div id="addInventoryModal" class="modal-overlay">
-        <div class="modal-content">
-            <h2>Add Blood Stock</h2>
-            <form id="inventoryForm">
-                <div class="form-group">
-                    <label>Blood Type</label>
-                    <select id="bloodType" required>
-                        <option value="A+">A+</option>
-                        <option value="A-">A-</option>
-                        <option value="B+">B+</option>
-                        <option value="B-">B-</option>
-                        <option value="AB+">AB+</option>
-                        <option value="AB-">AB-</option>
-                        <option value="O+">O+</option>
-                        <option value="O-">O-</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Units Available</label>
-                    <input type="number" id="unitsAvailable" required min="0" placeholder="Enter number of units">
-                </div>
-                <div class="form-group">
-                    <label>Expiry Date</label>
-                    <input type="date" id="expiryDate" required>
-                </div>
-                <div class="form-group">
-                    <label>Location</label>
-                    <input type="text" id="location" value="Main Blood Bank" required>
-                </div>
-                <div style="display: flex; gap: 12px; margin-top: 24px;">
-                    <button type="submit" class="add-btn">Save</button>
-                    <button type="button" class="action-btn delete-btn" id="cancelModal">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Updated JS link for Flask -->
-    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <!-- Firebase Config -->
+    <script src="{{ url_for('static', filename='firebase-config.js') }}"></script>
+    <!-- Authentication -->
+    <script src="{{ url_for('static', filename='auth.js') }}"></script>
 </body>
+
 </html>

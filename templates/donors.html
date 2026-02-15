@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Donors - BloodLink Admin{% endblock %}
+{% block page_title %}Donors{% endblock %}
+{% block page_subtitle %}Manage and verify registered donors{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div class="card-header">
+        <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-box" id="donorsSearch"
+                placeholder="Search donors by name, email, or blood type...">
+        </div>
+        <div class="filter-group">
+            <select class="filter-select" id="donorStatusFilter">
+                <option value="all">All Donors</option>
+                <option value="verified">Verified</option>
+                <option value="pending">Pending</option>
+            </select>
+            <select class="filter-select" id="bloodTypeFilter">
+                <option value="all">All Blood Types</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Donor Name</th>
+                    <th>Contact</th>
+                    <th>Blood Type</th>
+                    <th>Weight (kg)</th>
+                    <th>Donations</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="donorsTableBody">
+                <tr>
+                    <td colspan="7" class="empty-state">
+                        <div class="empty-state-icon">👥</div>
+                        <p>No donors registered yet</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='donors.js') }}"></script>
+{% endblock %}

@@ -45,7 +45,7 @@ python app.py
 ## Project Structure
 ```
 bloodlink-admin/
-├── app.py              # Flask server
+├── server.py             # Flask server
 ├── templates/
 │   └── index.html      # Admin panel UI
 ├── static/

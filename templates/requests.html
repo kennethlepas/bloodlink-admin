@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Blood Requests - BloodLink Admin{% endblock %}
+{% block page_title %}Blood Requests{% endblock %}
+{% block page_subtitle %}Manage and monitor blood requests{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div class="card-header">
+        <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-box" id="requestsSearch"
+                placeholder="Search requests by name, blood type, or hospital...">
+        </div>
+        <div class="filter-group">
+            <select class="filter-select" id="requestStatusFilter">
+                <option value="all">All Requests</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+            </select>
+            <select class="filter-select" id="requestBloodTypeFilter">
+                <option value="all">All Blood Types</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+            </select>
+            <select class="filter-select" id="urgencyFilter">
+                <option value="all">All Urgencies</option>
+                <option value="critical">Critical</option>
+                <option value="urgent">Urgent</option>
+                <option value="normal">Normal</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Requester</th>
+                    <th>Patient</th>
+                    <th>Blood Type</th>
+                    <th>Units</th>
+                    <th>Hospital</th>
+                    <th>Urgency</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="requestsTableBody">
+                <tr>
+                    <td colspan="9" class="empty-state">
+                        <div class="empty-state-icon">🩸</div>
+                        <p>No blood requests found</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Request Details Modal -->
+<div id="requestDetailsModal" class="modal">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <h2>Request Details</h2>
+            <button class="close-btn" id="closeRequestModal">&times;</button>
+        </div>
+        <div class="modal-body" id="requestDetailsContent">
+            <!-- Content will be populated dynamically -->
+        </div>
+        <div class="modal-footer" id="requestActions">
+            <!-- Action buttons will be populated dynamically -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='requests.js') }}"></script>
+{% endblock %}
