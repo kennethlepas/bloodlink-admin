@@ -293,10 +293,128 @@
                 font-size: 18px;
             }
         }
+
+        /* ── Premium Loading Screen ── */
+        #appLoadingScreen {
+            position: fixed;
+            inset: 0;
+            background: #ffffff;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.6s;
+        }
+
+        .loader-content {
+            text-align: center;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .loader-logo-wrap {
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .loader-logo {
+            width: 100px;
+            height: 100px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(197, 40, 61, 0.2);
+            animation: logoPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes logoPulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+                filter: drop-shadow(0 5px 15px rgba(197, 40, 61, 0.1));
+            }
+
+            50% {
+                transform: scale(1.08);
+                opacity: 0.9;
+                filter: drop-shadow(0 15px 35px rgba(197, 40, 61, 0.3));
+            }
+        }
+
+        .loader-progress-container {
+            width: 100%;
+            height: 4px;
+            background: #f1f5f9;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .loader-progress-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #C5283D, #2563EB);
+            border-radius: 10px;
+            transition: width 0.4s ease-out;
+        }
+
+        .loader-status-text {
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            min-height: 20px;
+            opacity: 0;
+            transform: translateY(5px);
+            animation: fadeInUp 0.4s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .bloodlink-brand {
+            position: absolute;
+            bottom: 40px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #C5283D;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.6;
+        }
+
+        #appLoadingScreen.fade-out {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
     </style>
 </head>
 
-<body>
+<body class="loading-active">
+
+    <!-- Premium Loading Screen -->
+    <div id="appLoadingScreen">
+        <div class="loader-content">
+            <div class="loader-logo-wrap">
+                <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="BloodLink" class="loader-logo">
+            </div>
+            <div class="loader-progress-container">
+                <div class="loader-progress-fill" id="loaderFill"></div>
+            </div>
+            <div class="loader-status-text" id="loaderStatus">Initializing application...</div>
+        </div>
+        <div class="bloodlink-brand">BloodLink Admin</div>
+    </div>
 
     <!-- Welcome / Login -->
     <div id="loginContainer" class="welcome-container hidden">
@@ -479,6 +597,80 @@
     <script src="{{ url_for('static', filename='utils.js') }}"></script>
     <!-- Authentication -->
     <script src="{{ url_for('static', filename='auth.js') }}"></script>
+
+    <!-- Loading Screen Logic -->
+    <script>
+        (function () {
+            const loader = document.getElementById('appLoadingScreen');
+            const fill = document.getElementById('loaderFill');
+            const statusText = document.getElementById('loaderStatus');
+            const loginContainer = document.getElementById('loginContainer');
+
+            const messages = [
+                "Establishing secure connection...",
+                "Connecting to Blood Bank registry...",
+                "Syncing donor database...",
+                "Loading regional inventory...",
+                "Verifying authentication module...",
+                "Preparing dashboard assets...",
+                "Finalizing system check..."
+            ];
+
+            let currentMessageIndex = 0;
+            let progress = 0;
+
+            // Advance progress and messages
+            const updateLoader = () => {
+                if (progress < 100) {
+                    // Random jumps for "realistic" feel
+                    const jump = Math.floor(Math.random() * 15) + 5;
+                    progress = Math.min(100, progress + jump);
+                    fill.style.width = progress + '%';
+
+                    // Update message occasionally
+                    if (progress > (currentMessageIndex + 1) * (100 / messages.length) && currentMessageIndex < messages.length - 1) {
+                        currentMessageIndex++;
+                        statusText.style.opacity = 0;
+                        setTimeout(() => {
+                            statusText.textContent = messages[currentMessageIndex];
+                            statusText.style.opacity = 1;
+                        }, 200);
+                    }
+
+                    // Call again with variable delay
+                    const nextDelay = Math.floor(Math.random() * 300) + 150;
+                    setTimeout(updateLoader, nextDelay);
+                } else {
+                    // Loading complete
+                    finishLoading();
+                }
+            };
+
+            const finishLoading = () => {
+                statusText.textContent = "Welcome to BloodLink";
+                fill.style.width = '100%';
+
+                setTimeout(() => {
+                    // Show login container first but keep it invisible
+                    loginContainer.classList.remove('hidden');
+
+                    // Fade out loader
+                    loader.classList.add('fade-out');
+                    document.body.classList.remove('loading-active');
+
+                    // Optional: Remove from DOM after transition
+                    setTimeout(() => {
+                        loader.remove();
+                    }, 600);
+                }, 400);
+            };
+
+            // Start simulation after brief delay
+            window.addEventListener('load', () => {
+                setTimeout(updateLoader, 300);
+            });
+        })();
+    </script>
 </body>
 
 </html>
