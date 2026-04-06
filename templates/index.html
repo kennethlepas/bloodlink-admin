@@ -10,38 +10,327 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        /* ── Welcome page overrides ── */
+
+        .welcome-container {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background-image: url('/static/images/welcome-bg.jpg');
+            background-size: cover;
+            background-position: center 10%;
+            background-repeat: no-repeat;
+        }
+
+        /* Subtle overlay so the card reads clearly over the photo */
+        .welcome-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.1);
+            z-index: 1;
+        }
+
+        .welcome-content {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 440px;
+            margin-top: -60px;
+            animation: slideUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(32px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── Login card – bluish theme ── */
+        .login-card {
+            background: rgba(219, 234, 254, 0.92);
+            border-radius: 18px;
+            padding: 44px 40px 36px;
+            box-shadow:
+                0 24px 64px rgba(0, 0, 0, 0.35),
+                0 0 0 1px rgba(147, 197, 253, 0.4);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(147, 197, 253, 0.5);
+        }
+
+        /* ── Header area ── */
+        .login-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        /* Logo */
+        .logo-image-large {
+            width: clamp(180px, 25vw, 220px);
+            height: auto;
+            aspect-ratio: 1/1;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto 20px;
+            border-radius: 30px;
+            box-shadow: 0 10px 30px rgba(37, 99, 235, 0.35);
+        }
+
+        .login-header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1E40AF;
+            margin-bottom: 4px;
+            letter-spacing: -0.4px;
+        }
+
+        .login-header p {
+            color: #3B82F6;
+            font-size: 13px;
+        }
+
+        /* ── Form elements ── */
+        .login-card .form-group {
+            margin-bottom: 14px;
+        }
+
+        .login-card .form-group label {
+            font-size: 13px;
+            margin-bottom: 6px;
+            color: #1E40AF;
+            font-weight: 600;
+        }
+
+        .login-card .form-group input {
+            padding: 10px 14px;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.75);
+            border: 2px solid rgba(147, 197, 253, 0.6);
+            color: #1E293B;
+        }
+
+        .login-card .form-group input:focus {
+            background: rgba(255, 255, 255, 0.95);
+            border-color: #2563EB;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        .login-card .form-group input::placeholder {
+            color: #93C5FD;
+        }
+
+        /* ── Submit button ── */
+        .login-btn {
+            margin-top: 4px;
+            padding: 12px 20px;
+            font-size: 15px;
+        }
+
+        /* ── Footer ── */
+        .login-footer {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(147, 197, 253, 0.5);
+        }
+
+        .login-footer p {
+            font-size: 12px;
+            color: #3B82F6;
+        }
+
+        /* ── Error message ── */
+        #loginError {
+            margin-bottom: 16px;
+            font-size: 13px;
+            padding: 10px 14px;
+        }
+
+        /* ── Brand watermark at bottom of screen ── */
+        .welcome-brand {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255, 255, 255, 0.65);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .welcome-brand span {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background: #2563EB;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(0.75);
+            }
+        }
+
+        /* ── Kenyan Flag CSS ── */
+        .kenya-flag-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .kenya-flag {
+            width: 28px;
+            height: 18px;
+            position: relative;
+            background: #fff;
+            border-radius: 2px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .flag-stripe {
+            height: 33.33%;
+            width: 100%;
+        }
+
+        .flag-black {
+            background: #000;
+        }
+
+        .flag-red {
+            background: #BB0613;
+            height: 33.33%;
+            border-top: 1px solid #fff;
+            border-bottom: 1px solid #fff;
+            position: relative;
+        }
+
+        .flag-green {
+            background: #006600;
+        }
+
+        .flag-shield {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 10px;
+            height: 12px;
+            background: #BB0613;
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            border: 1px solid #fff;
+            box-shadow: 0 0 0 1px #000;
+        }
+
+        .flag-shield::before,
+        .flag-shield::after {
+            content: '';
+            position: absolute;
+            background: #fff;
+            width: 1px;
+            height: 140%;
+            top: -20%;
+        }
+
+        .flag-shield::before {
+            transform: rotate(45deg);
+            left: 4px;
+        }
+
+        .flag-shield::after {
+            transform: rotate(-45deg);
+            left: 4px;
+        }
+
+        /* ── Responsive tweaks ── */
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 28px 22px 22px;
+                border-radius: 14px;
+            }
+
+            .welcome-content {
+                max-width: 100%;
+            }
+
+            .logo-image-large {
+                width: 80px;
+                height: 80px;
+            }
+
+            .login-header h1 {
+                font-size: 18px;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <!-- Loading Screen -->
-    <div id="loading" class="loading-container">
-        <div class="spinner"></div>
-        <p>Loading...</p>
-    </div>
 
-    <!-- Welcome/Login Container -->
+    <!-- Welcome / Login -->
     <div id="loginContainer" class="welcome-container hidden">
+
         <div class="welcome-overlay"></div>
+
         <div class="welcome-content">
             <div class="login-card">
+
                 <div class="login-header">
                     <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="BloodLink Logo"
                         class="logo-image-large">
-                    <h1>BloodLink Admin Portal</h1>
-                    <p>Manage blood bank operations and save lives</p>
+                    <h1>BloodLink Admin</h1>
+                    <p>Manage blood bank operations &amp; save lives</p>
+                </div>
+
+                <div id="networkStatus" class="network-badge hidden">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Online</span>
                 </div>
 
                 <div id="loginError" class="error-message hidden"></div>
 
-                <form id="loginForm">
+                <form class="login-form" id="loginForm">
                     <div class="form-group">
-                        <label>Email Address</label>
-                        <input type="email" id="email" placeholder="admin@bloodlink.com" required autocomplete="email">
+                        <label for="email">Admin Email</label>
+                        <input type="email" id="email" placeholder="admin@bloodlink.com" required>
                     </div>
                     <div class="form-group">
-                        <label>Password</label>
-                        <input type="password" id="password" placeholder="Enter your password" required
-                            autocomplete="current-password">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" placeholder="••••••••" required>
+                    </div>
+                    <div class="forgot-password-wrap">
+                        <a href="#" id="forgotPasswordLink" class="text-link">Forgot Password?</a>
                     </div>
                     <button type="submit" class="login-btn" id="loginBtn">
                         <span>Sign In</span>
@@ -50,14 +339,144 @@
                 </form>
 
                 <div class="login-footer">
-                    <p>Secure admin access • BloodLink © 2024</p>
+                    <p>New hospital? <a href="/claim" id="openClaimModal" class="text-link">Claim Your Facility</a></p>
+                    <div
+                        style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px;">
+                        <p style="margin: 0; font-size: 11px; opacity: 0.85; color: #1E40AF;">Secure admin access &bull;
+                            BloodLink &copy; 2026</p>
+                        <div class="kenya-flag"
+                            style="margin: 0; width: 18px; height: 12px; box-shadow: none; opacity: 0.9;">
+                            <div class="flag-stripe flag-black"></div>
+                            <div class="flag-red">
+                                <div class="flag-shield" style="width: 6px; height: 8px;"></div>
+                            </div>
+                            <div class="flag-stripe flag-green"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Hospital Claim Modal -->
+        <div id="claimModal" class="modal-overlay">
+            <div class="modal-content" style="max-width: 460px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">Claim Your Hospital Facility</h3>
+                    <button class="modal-close" id="closeClaimModal">&times;</button>
+                </div>
+
+                <!-- Step 1: Code Entry -->
+                <div id="claimStep1" class="claim-step">
+                    <p class="step-desc">Enter your Facility Code (from the BloodLink Registry) to begin the
+                        verification process.</p>
+                    <div class="form-group">
+                        <label for="facilityCode">Facility Code</label>
+                        <input type="text" id="facilityCode" placeholder="e.g. 25539" required>
+                    </div>
+                    <button class="action-btn action-btn-primary full-width" id="btnNextStep1">Lookup Facility</button>
+                    <div style="text-align: center; margin-top: 16px; font-size: 13px;">
+                        <span style="color: #64748B;">Already registered?</span>
+                        <a href="#" onclick="document.getElementById('closeClaimModal').click()" class="text-link"
+                            style="font-weight: 600;">Sign In Here</a>
+                    </div>
+                </div>
+
+                <!-- Step 2: Confirmation -->
+                <div id="claimStep2" class="claim-step hidden">
+                    <div class="facility-preview">
+                        <p class="preview-label">You are attempting to access:</p>
+                        <h2 id="previewHospitalName" class="preview-name">Africa Inuka Hospital</h2>
+                        <p id="previewHospitalDetails" class="preview-meta">Code: 25539 | Nakuru County</p>
+                    </div>
+                    <p class="step-desc">Is this the correct facility you represent?</p>
+                    <div class="modal-actions">
+                        <button class="action-btn" id="btnBackStep2">No, Go Back</button>
+                        <button class="action-btn action-btn-primary" id="btnConfirmStep2">Yes, This Is Correct</button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Official Email -->
+                <div id="claimStep3" class="claim-step hidden">
+                    <p class="step-desc">Enter the official hospital email. A secure activation link will be sent to
+                        this address.</p>
+                    <div class="form-group">
+                        <label for="claimEmail">Official Hospital Email</label>
+                        <input type="email" id="claimEmail" placeholder="admin@hospital-domain.co.ke" required>
+                    </div>
+                    <button class="action-btn action-btn-primary full-width" id="btnSendMagicLink">Send Activation
+                        Link</button>
+                </div>
+
+                <!-- Step 4: Success / Magic Link Sent -->
+                <div id="claimStep4" class="claim-step hidden">
+                    <div class="success-icon">✓</div>
+                    <h3>Activation Link Sent</h3>
+                    <p class="step-desc">A secure magic link has been sent to <strong
+                            id="sentEmailDisplay">admin@africa-inuka.com</strong>.</p>
+                    <p class="step-desc" style="font-size: 13px; opacity: 0.8;">Please click the link in your email to
+                        set your permanent password and finish account setup.</p>
+                    <button class="action-btn action-btn-primary full-width" id="btnCloseClaimSuccess">Done</button>
+                </div>
+
+                <!-- Hidden Step: Password Setup (Triggered by Magic Link) -->
+                <div id="claimStepFinal" class="claim-step hidden">
+                    <div class="claim-header">
+                        <img src="{{ url_for('static', filename='images/logo.jpg') }}" class="mini-logo" alt="">
+                        <h3>Initialize Admin Account</h3>
+                    </div>
+                    <p class="step-desc">Welcome! Create a secure password for your hospital admin account.</p>
+                    <div class="form-group">
+                        <label for="finalPassword">New Password</label>
+                        <input type="password" id="finalPassword" placeholder="••••••••" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm Password</label>
+                        <input type="password" id="confirmPassword" placeholder="••••••••" required>
+                    </div>
+                    <button class="action-btn action-btn-primary full-width" id="btnFinalizeAccount">Complete
+                        Setup</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Forgot Password Modal -->
+        <div id="forgotPasswordModal" class="modal-overlay">
+            <div class="modal-content" style="max-width: 420px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">Reset Password</h3>
+                    <button class="modal-close" id="closeForgotModal">&times;</button>
+                </div>
+                <div class="modal-body" style="padding: 24px;">
+                    <p class="step-desc" style="margin-bottom: 20px;">Enter your administrative email to receive a
+                        secure password reset link.</p>
+                    <div class="form-group">
+                        <label for="resetEmail">Admin Email</label>
+                        <input type="email" id="resetEmail" placeholder="admin@bloodlink.com" required>
+                    </div>
+                    <button class="action-btn action-btn-primary full-width" id="btnSendResetLink"
+                        style="margin-top: 10px;">Send Reset Link</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subtle brand tag at screen bottom -->
+        <div class="welcome-brand">
+            <div class="kenya-flag" style="width: 20px; height: 13px; margin-right: 4px; box-shadow: none;">
+                <div class="flag-stripe flag-black"></div>
+                <div class="flag-red">
+                    <div class="flag-shield" style="width: 6px; height: 8px;"></div>
+                </div>
+                <div class="flag-stripe flag-green"></div>
+            </div>
+            <span></span>
+            BloodLink · Saving Lives in Kenya
         </div>
     </div>
 
     <!-- Firebase Config -->
     <script src="{{ url_for('static', filename='firebase-config.js') }}"></script>
+    <!-- Utilities -->
+    <script src="{{ url_for('static', filename='utils.js') }}"></script>
     <!-- Authentication -->
     <script src="{{ url_for('static', filename='auth.js') }}"></script>
 </body>

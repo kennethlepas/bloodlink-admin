@@ -1,0 +1,990 @@
+{% extends "base.html" %}
+
+{% block body_class %}notification-theme-view{% endblock %}
+
+{% block title %}Bookings Management - BloodLink Admin{% endblock %}
+{% block page_title %}Donation Bookings{% endblock %}
+{% block page_subtitle %}Overview of all donor & recipient appointments across all hospitals{% endblock %}
+
+{% block content %}
+<style>
+    /* ==================== MODERN BOOKINGS STYLES ==================== */
+    :root {
+        --primary: #dc2626;
+        --primary-dark: #b91c1c;
+        --primary-light: #fee2e2;
+        --secondary: #059669;
+        --secondary-dark: #047857;
+        --info: #3b82f6;
+        --info-dark: #2563eb;
+        --warning: #f59e0b;
+        --warning-dark: #d97706;
+        --gray-50: #f9fafb;
+        --gray-100: #f3f4f6;
+        --gray-200: #e5e7eb;
+        --gray-300: #d1d5db;
+        --gray-400: #9ca3af;
+        --gray-500: #6b7280;
+        --gray-600: #4b5563;
+        --gray-700: #374151;
+        --gray-800: #1f2937;
+        --gray-900: #111827;
+        --radius: 1rem;
+        --radius-sm: 0.5rem;
+        --radius-lg: 1.5rem;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        border: 1px solid var(--gray-100);
+        cursor: pointer;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-icon {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, var(--primary-light), #fff);
+        border-radius: var(--radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--gray-900);
+        line-height: 1;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--gray-500);
+        font-weight: 500;
+    }
+
+    /* Tabs */
+    .tabs-container {
+        background: white;
+        border-radius: var(--radius);
+        margin-bottom: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .tabs {
+        display: flex;
+        gap: 0.5rem;
+        padding: 0.75rem;
+        border-bottom: 1px solid var(--gray-200);
+        background: var(--gray-50);
+        border-radius: var(--radius) var(--radius) 0 0;
+        flex-wrap: wrap;
+    }
+
+    .tab-btn {
+        flex: 1;
+        padding: 0.875rem 1.5rem;
+        border: none;
+        background: transparent;
+        font-weight: 600;
+        font-size: 0.9375rem;
+        color: var(--gray-600);
+        cursor: pointer;
+        border-radius: var(--radius-sm);
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .tab-btn:hover {
+        background: var(--gray-100);
+        color: var(--gray-900);
+    }
+
+    .tab-btn.active {
+        background: white;
+        color: var(--primary);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .tab-badge {
+        background: var(--gray-200);
+        color: var(--gray-600);
+        padding: 0.125rem 0.5rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .tab-btn.active .tab-badge {
+        background: var(--primary-light);
+        color: var(--primary-dark);
+    }
+
+    /* Filter Bar */
+    .filter-bar {
+        background: white;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--gray-200);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .filter-group {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .filter-select,
+    .search-input {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-sm);
+        font-size: 0.875rem;
+        transition: all 0.2s;
+    }
+
+    .filter-select:focus,
+    .search-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .search-input {
+        width: 250px;
+    }
+
+    /* Hospital Filter Select */
+    .hospital-filter {
+        min-width: 200px;
+    }
+
+    /* Bookings Grid */
+    .bookings-grid {
+        padding: 1.5rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .booking-card {
+        background: white;
+        border-radius: var(--radius);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--gray-100);
+        position: relative;
+    }
+
+    .booking-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+    }
+
+    .booking-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: var(--gray-300);
+    }
+
+    .booking-card.status-pending::before {
+        background: var(--warning);
+    }
+
+    .booking-card.status-confirmed::before {
+        background: var(--info);
+    }
+
+    .booking-card.status-completed::before,
+    .booking-card.status-fulfilled::before {
+        background: var(--secondary);
+    }
+
+    .booking-card.status-rejected::before {
+        background: var(--primary);
+    }
+
+    .booking-card.status-processing::before {
+        background: #8b5cf6;
+    }
+
+    .booking-card.status-ready::before {
+        background: #10b981;
+    }
+
+    .booking-header {
+        padding: 1.25rem;
+        background: var(--gray-50);
+        border-bottom: 1px solid var(--gray-100);
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .booking-info {
+        flex: 1;
+    }
+
+    .booking-name {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 0.25rem;
+    }
+
+    .booking-id {
+        font-size: 0.75rem;
+        color: var(--gray-400);
+        font-family: monospace;
+    }
+
+    .hospital-info {
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--gray-200);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .hospital-name {
+        font-weight: 600;
+        color: var(--info);
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .hospital-code {
+        font-size: 0.7rem;
+        color: var(--gray-400);
+        font-family: monospace;
+    }
+
+    .blood-badge {
+        background: linear-gradient(135deg, var(--primary-light), #fff);
+        padding: 0.375rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.875rem;
+        font-weight: 800;
+        color: var(--primary-dark);
+    }
+
+    .booking-details {
+        padding: 1.25rem;
+        border-bottom: 1px solid var(--gray-100);
+    }
+
+    .detail-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+        font-size: 0.875rem;
+    }
+
+    .detail-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .detail-icon {
+        width: 24px;
+        font-size: 1rem;
+    }
+
+    .detail-text {
+        color: var(--gray-600);
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: capitalize;
+    }
+
+    .status-pending {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-confirmed {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .status-completed,
+    .status-fulfilled {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .status-rejected {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .status-processing {
+        background: #ede9fe;
+        color: #6d28d9;
+    }
+
+    .status-ready {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .booking-actions {
+        padding: 1rem 1.25rem;
+        display: flex;
+        gap: 0.75rem;
+        background: var(--gray-50);
+    }
+
+    .btn {
+        flex: 1;
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+        font-size: 0.8125rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.375rem;
+    }
+
+    .btn-primary {
+        background: var(--info);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--info-dark);
+        transform: translateY(-1px);
+    }
+
+    .btn-success {
+        background: var(--secondary);
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: var(--secondary-dark);
+        transform: translateY(-1px);
+    }
+
+    .btn-danger {
+        background: var(--primary-light);
+        color: var(--primary-dark);
+        border: 1px solid var(--primary);
+    }
+
+    .btn-danger:hover {
+        background: var(--primary);
+        color: white;
+    }
+
+    .btn-warning {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .btn-warning:hover {
+        background: var(--warning);
+        color: white;
+    }
+
+    /* Loading & Empty States */
+    .loading-state,
+    .empty-state {
+        text-align: center;
+        padding: 4rem;
+        color: var(--gray-500);
+    }
+
+    .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid var(--gray-200);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .hidden {
+        display: none;
+    }
+
+    .rejection-reason {
+        padding: 0.75rem 1.25rem;
+        background: #fef2f2;
+        color: #991b1b;
+        font-size: 0.75rem;
+        border-top: 1px solid #fecaca;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .bookings-grid {
+            grid-template-columns: 1fr;
+            padding: 1rem;
+        }
+
+        .filter-bar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .search-input,
+        .hospital-filter {
+            width: 100%;
+        }
+
+        .tabs {
+            flex-direction: column;
+        }
+
+        .filter-group {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<!-- Stats Grid -->
+<div class="stats-grid">
+    <div class="stat-card" onclick="switchTab('donor')">
+        <div class="stat-icon">🩸</div>
+        <div class="stat-info">
+            <div class="stat-value" id="statDonorTotal">0</div>
+            <div class="stat-label">Donor Bookings</div>
+        </div>
+    </div>
+    <div class="stat-card" onclick="switchTab('recipient')">
+        <div class="stat-icon">🏥</div>
+        <div class="stat-info">
+            <div class="stat-value" id="statRecipientTotal">0</div>
+            <div class="stat-label">Recipient Bookings</div>
+        </div>
+    </div>
+    <div class="stat-card" onclick="switchTab('donor')">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-info">
+            <div class="stat-value" id="statPending">0</div>
+            <div class="stat-label">Pending Approvals</div>
+        </div>
+    </div>
+    <div class="stat-card" onclick="switchTab('donor')">
+        <div class="stat-icon">✅</div>
+        <div class="stat-info">
+            <div class="stat-value" id="statCompleted">0</div>
+            <div class="stat-label">Completed</div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs-container">
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('donor')">
+            🩸 Donor Bookings
+            <span class="tab-badge" id="donorCount">0</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('recipient')">
+            🏥 Recipient Bookings
+            <span class="tab-badge" id="recipientCount">0</span>
+        </button>
+    </div>
+
+    <!-- Donor Bookings -->
+    <div id="donorSection">
+        <div class="filter-bar">
+            <div class="filter-group">
+                <select id="donorStatusFilter" class="filter-select" onchange="filterDonorBookings()">
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="completed">Completed</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+                <select id="donorHospitalFilter" class="filter-select hospital-filter" onchange="filterDonorBookings()">
+                    <option value="all">All Hospitals</option>
+                </select>
+                <input type="text" id="donorSearch" class="search-input" placeholder="Search by name, ID, or phone..."
+                    onkeyup="filterDonorBookings()">
+            </div>
+            <button class="btn btn-primary" onclick="loadDonorBookings()">🔄 Refresh</button>
+        </div>
+        <div id="donorBookingsList" class="bookings-grid">
+            <div class="loading-state">
+                <div class="loading-spinner"></div>
+                <p>Loading donor bookings...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recipient Bookings -->
+    <div id="recipientSection" class="hidden">
+        <div class="filter-bar">
+            <div class="filter-group">
+                <select id="recipientStatusFilter" class="filter-select" onchange="filterRecipientBookings()">
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="processing">Processing</option>
+                    <option value="ready">Ready</option>
+                    <option value="fulfilled">Fulfilled</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+                <select id="recipientHospitalFilter" class="filter-select hospital-filter"
+                    onchange="filterRecipientBookings()">
+                    <option value="all">All Hospitals</option>
+                </select>
+                <input type="text" id="recipientSearch" class="search-input"
+                    placeholder="Search by name, patient, or ID..." onkeyup="filterRecipientBookings()">
+            </div>
+            <button class="btn btn-primary" onclick="loadRecipientBookings()">🔄 Refresh</button>
+        </div>
+        <div id="recipientBookingsList" class="bookings-grid">
+            <div class="loading-state">
+                <div class="loading-spinner"></div>
+                <p>Loading recipient bookings...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==================== SUPER ADMIN BOOKINGS MANAGEMENT ====================
+    let allDonorBookings = [];
+    let allRecipientBookings = [];
+    let uniqueHospitals = new Map();
+
+    // Helper Functions
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // Tab Switching
+    window.switchTab = function (tab) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        const donorSection = document.getElementById('donorSection');
+        const recipientSection = document.getElementById('recipientSection');
+
+        if (donorSection) donorSection.classList.add('hidden');
+        if (recipientSection) recipientSection.classList.add('hidden');
+
+        if (tab === 'donor') {
+            document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            if (donorSection) donorSection.classList.remove('hidden');
+            loadDonorBookings();
+        } else if (tab === 'recipient') {
+            document.querySelectorAll('.tab-btn')[1].classList.add('active');
+            if (recipientSection) recipientSection.classList.remove('hidden');
+            loadRecipientBookings();
+        }
+    };
+
+    // Populate Hospital Filters
+    function populateHospitalFilters() {
+        const donorFilter = document.getElementById('donorHospitalFilter');
+        const recipientFilter = document.getElementById('recipientHospitalFilter');
+
+        if (!donorFilter || !recipientFilter) return;
+
+        // Clear existing options except "All Hospitals"
+        while (donorFilter.options.length > 1) donorFilter.remove(1);
+        while (recipientFilter.options.length > 1) recipientFilter.remove(1);
+
+        // Sort hospitals by name
+        const sortedHospitals = Array.from(uniqueHospitals.values()).sort((a, b) => a.name.localeCompare(b.name));
+
+        sortedHospitals.forEach(hospital => {
+            const option1 = document.createElement('option');
+            option1.value = hospital.id;
+            option1.textContent = `${hospital.name} (${hospital.code || hospital.id})`;
+            donorFilter.appendChild(option1);
+
+            const option2 = document.createElement('option');
+            option2.value = hospital.id;
+            option2.textContent = `${hospital.name} (${hospital.code || hospital.id})`;
+            recipientFilter.appendChild(option2);
+        });
+    }
+
+    // Initialize
+    window.initializePage = async function () {
+        console.log('📅 Initializing Super Admin Bookings...');
+        loadDonorBookings();
+        loadRecipientBookings();
+    };
+
+    // Load Donor Bookings from Firebase
+    window.loadDonorBookings = async function () {
+        const list = document.getElementById('donorBookingsList');
+        if (!list) return;
+
+        list.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div><p>Loading donor bookings...</p></div>';
+
+        try {
+            const snapshot = await firebase.firestore().collection('donorBookings')
+                .orderBy('scheduledDate', 'desc')
+                .limit(200)
+                .get();
+
+            allDonorBookings = [];
+            uniqueHospitals.clear();
+
+            for (const doc of snapshot.docs) {
+                const data = doc.data();
+                const hospitalId = data.hospitalId || data.hospitalCode;
+                const hospitalName = data.hospitalName || 'Unknown Hospital';
+                const hospitalCode = data.hospitalCode || hospitalId || 'N/A';
+
+                // Track unique hospitals
+                if (hospitalId && !uniqueHospitals.has(hospitalId)) {
+                    uniqueHospitals.set(hospitalId, {
+                        id: hospitalId,
+                        name: hospitalName,
+                        code: hospitalCode
+                    });
+                } else if (hospitalName && hospitalName !== 'Unknown Hospital') {
+                    // Find by name if no ID
+                    let found = false;
+                    for (const [id, h] of uniqueHospitals) {
+                        if (h.name === hospitalName) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        uniqueHospitals.set(hospitalName, {
+                            id: hospitalName,
+                            name: hospitalName,
+                            code: hospitalCode
+                        });
+                    }
+                }
+
+                allDonorBookings.push({
+                    id: doc.id,
+                    ...data,
+                    hospitalId: hospitalId,
+                    hospitalName: hospitalName,
+                    hospitalCode: hospitalCode,
+                    scheduledDate: data.scheduledDate || 'TBD',
+                    scheduledTime: data.scheduledTime || 'TBD'
+                });
+            }
+
+            populateHospitalFilters();
+            filterDonorBookings();
+            updateStats();
+            console.log(`✅ Loaded ${allDonorBookings.length} donor bookings from ${uniqueHospitals.size} hospitals`);
+        } catch (error) {
+            console.error('Error loading donor bookings:', error);
+            list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠️</div><p>Error loading: ${error.message}</p></div>`;
+        }
+    };
+
+    window.filterDonorBookings = function () {
+        const status = document.getElementById('donorStatusFilter')?.value || 'all';
+        const hospitalId = document.getElementById('donorHospitalFilter')?.value || 'all';
+        const search = document.getElementById('donorSearch')?.value.toLowerCase() || '';
+
+        let filtered = [...allDonorBookings];
+
+        if (status !== 'all') {
+            filtered = filtered.filter(b => b.status === status);
+        }
+        if (hospitalId !== 'all') {
+            filtered = filtered.filter(b => b.hospitalId === hospitalId || b.hospitalName === hospitalId);
+        }
+        if (search) {
+            filtered = filtered.filter(b =>
+                (b.donorName && b.donorName.toLowerCase().includes(search)) ||
+                (b.bookingId && b.bookingId.toLowerCase().includes(search)) ||
+                (b.donorPhone && b.donorPhone.includes(search)) ||
+                (b.hospitalName && b.hospitalName.toLowerCase().includes(search))
+            );
+        }
+        renderDonorBookings(filtered);
+    };
+
+    function renderDonorBookings(bookings) {
+        const grid = document.getElementById('donorBookingsList');
+        if (!grid) return;
+
+        if (bookings.length === 0) {
+            grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📅</div><p>No donor bookings found</p></div>`;
+            return;
+        }
+
+        grid.innerHTML = bookings.map(b => `
+            <div class="booking-card status-${b.status || 'pending'}">
+                <div class="booking-header">
+                    <div class="booking-info">
+                        <div class="booking-name">${escapeHtml(b.donorName || 'Unknown')}</div>
+                        <div class="booking-id">${escapeHtml(b.bookingId || b.id.slice(0, 8))}</div>
+                        <div class="hospital-info">
+                            <span class="hospital-name">🏥 ${escapeHtml(b.hospitalName || 'Unknown Hospital')}</span>
+                            <span class="hospital-code">(${escapeHtml(b.hospitalCode || 'N/A')})</span>
+                        </div>
+                    </div>
+                    <div class="blood-badge">${escapeHtml(b.bloodType || 'N/A')}</div>
+                </div>
+                <div class="booking-details">
+                    <div class="detail-row">
+                        <span class="detail-icon">📅</span>
+                        <span class="detail-text">${escapeHtml(b.scheduledDate)} at ${escapeHtml(b.scheduledTime)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-icon">📞</span>
+                        <span class="detail-text">${escapeHtml(b.donorPhone || 'N/A')}</span>
+                    </div>
+                    ${b.notes ? `<div class="detail-row"><span class="detail-icon">📝</span><span class="detail-text">${escapeHtml(b.notes)}</span></div>` : ''}
+                </div>
+                <div class="booking-actions">
+                    <span class="status-badge status-${b.status || 'pending'}">${b.status || 'pending'}</span>
+                    <button class="btn btn-warning" onclick="window.openSupportTicket('${b.id}', 'donor_booking')">🎫 Dispute</button>
+                </div>
+                ${b.rejectionReason ? `<div class="rejection-reason">❌ ${escapeHtml(b.rejectionReason)}</div>` : ''}
+            </div>
+        `).join('');
+    }
+
+    // Load Recipient Bookings
+    window.loadRecipientBookings = async function () {
+        const list = document.getElementById('recipientBookingsList');
+        if (!list) return;
+
+        list.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div><p>Loading recipient bookings...</p></div>';
+
+        try {
+            const snapshot = await firebase.firestore().collection('recipientBookings')
+                .orderBy('scheduledDate', 'desc')
+                .limit(200)
+                .get();
+
+            allRecipientBookings = [];
+
+            for (const doc of snapshot.docs) {
+                const data = doc.data();
+                const hospitalId = data.hospitalId || data.hospitalCode;
+                const hospitalName = data.hospitalName || 'Unknown Hospital';
+                const hospitalCode = data.hospitalCode || hospitalId || 'N/A';
+
+                // Track unique hospitals (if not already tracked)
+                if (hospitalId && !uniqueHospitals.has(hospitalId)) {
+                    uniqueHospitals.set(hospitalId, {
+                        id: hospitalId,
+                        name: hospitalName,
+                        code: hospitalCode
+                    });
+                } else if (hospitalName && hospitalName !== 'Unknown Hospital') {
+                    let found = false;
+                    for (const [id, h] of uniqueHospitals) {
+                        if (h.name === hospitalName) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        uniqueHospitals.set(hospitalName, {
+                            id: hospitalName,
+                            name: hospitalName,
+                            code: hospitalCode
+                        });
+                    }
+                }
+
+                allRecipientBookings.push({
+                    id: doc.id,
+                    ...data,
+                    hospitalId: hospitalId,
+                    hospitalName: hospitalName,
+                    hospitalCode: hospitalCode,
+                    scheduledDate: data.scheduledDate || 'TBD',
+                    scheduledTime: data.scheduledTime || 'TBD'
+                });
+            }
+
+            populateHospitalFilters();
+            filterRecipientBookings();
+            updateStats();
+            console.log(`✅ Loaded ${allRecipientBookings.length} recipient bookings`);
+        } catch (error) {
+            console.error('Error loading recipient bookings:', error);
+            list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠️</div><p>Error loading: ${error.message}</p></div>`;
+        }
+    };
+
+    window.filterRecipientBookings = function () {
+        const status = document.getElementById('recipientStatusFilter')?.value || 'all';
+        const hospitalId = document.getElementById('recipientHospitalFilter')?.value || 'all';
+        const search = document.getElementById('recipientSearch')?.value.toLowerCase() || '';
+
+        let filtered = [...allRecipientBookings];
+
+        if (status !== 'all') {
+            filtered = filtered.filter(b => b.status === status);
+        }
+        if (hospitalId !== 'all') {
+            filtered = filtered.filter(b => b.hospitalId === hospitalId || b.hospitalName === hospitalId);
+        }
+        if (search) {
+            filtered = filtered.filter(b =>
+                (b.requesterName && b.requesterName.toLowerCase().includes(search)) ||
+                (b.patientName && b.patientName.toLowerCase().includes(search)) ||
+                (b.bookingId && b.bookingId.toLowerCase().includes(search)) ||
+                (b.hospitalName && b.hospitalName.toLowerCase().includes(search))
+            );
+        }
+        renderRecipientBookings(filtered);
+    };
+
+    function renderRecipientBookings(bookings) {
+        const grid = document.getElementById('recipientBookingsList');
+        if (!grid) return;
+
+        if (bookings.length === 0) {
+            grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🏥</div><p>No recipient bookings found</p></div>`;
+            return;
+        }
+
+        grid.innerHTML = bookings.map(b => `
+            <div class="booking-card status-${b.status || 'pending'}">
+                <div class="booking-header">
+                    <div class="booking-info">
+                        <div class="booking-name">${escapeHtml(b.requesterName || 'Unknown')}</div>
+                        <div class="booking-id">${escapeHtml(b.bookingId || b.id.slice(0, 8))}</div>
+                        <div class="hospital-info">
+                            <span class="hospital-name">🏥 ${escapeHtml(b.hospitalName || 'Unknown Hospital')}</span>
+                            <span class="hospital-code">(${escapeHtml(b.hospitalCode || 'N/A')})</span>
+                        </div>
+                    </div>
+                    <div class="blood-badge">${escapeHtml(b.bloodType || 'N/A')}</div>
+                </div>
+                <div class="booking-details">
+                    <div class="detail-row">
+                        <span class="detail-icon">👤</span>
+                        <span class="detail-text">Patient: ${escapeHtml(b.patientName || 'N/A')}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-icon">📅</span>
+                        <span class="detail-text">${escapeHtml(b.scheduledDate)} at ${escapeHtml(b.scheduledTime)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-icon">🩸</span>
+                        <span class="detail-text">${b.unitsNeeded || 1} unit(s) needed</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-icon">📞</span>
+                        <span class="detail-text">${escapeHtml(b.requesterPhone || 'N/A')}</span>
+                    </div>
+                    ${b.notes ? `<div class="detail-row"><span class="detail-icon">📝</span><span class="detail-text">${escapeHtml(b.notes)}</span></div>` : ''}
+                </div>
+                <div class="booking-actions">
+                    <span class="status-badge status-${b.status || 'pending'}">${b.status || 'pending'}</span>
+                    <button class="btn btn-warning" onclick="window.openSupportTicket('${b.id}', 'recipient_booking')">🎫 Dispute</button>
+                </div>
+                ${b.rejectionReason ? `<div class="rejection-reason">❌ ${escapeHtml(b.rejectionReason)}</div>` : ''}
+            </div>
+        `).join('');
+    }
+
+    function updateStats() {
+        const donorTotal = allDonorBookings.length;
+        const recipientTotal = allRecipientBookings.length;
+        const pending = allDonorBookings.filter(b => b.status === 'pending').length +
+            allRecipientBookings.filter(b => b.status === 'pending').length;
+        const completed = allDonorBookings.filter(b => b.status === 'completed').length +
+            allRecipientBookings.filter(b => b.status === 'fulfilled' || b.status === 'completed').length;
+
+        document.getElementById('statDonorTotal').textContent = donorTotal;
+        document.getElementById('statRecipientTotal').textContent = recipientTotal;
+        document.getElementById('statPending').textContent = pending;
+        document.getElementById('statCompleted').textContent = completed;
+
+        document.getElementById('donorCount').textContent = donorTotal;
+        document.getElementById('recipientCount').textContent = recipientTotal;
+    }
+
+    // Support Ticket Integration
+    window.openSupportTicket = function (entityId, entityType) {
+        // Prepare ticket metadata in session storage or URL params
+        const params = new URLSearchParams({
+            entityId: entityId,
+            entityType: entityType,
+            autoOpen: 'true'
+        });
+        window.location.href = `/tickets?${params.toString()}`;
+    };
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', initializePage);
+</script>
+{% endblock %}

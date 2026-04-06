@@ -1,0 +1,447 @@
+{% extends "base.html" %}
+
+{% block body_class %}notification-theme-view{% endblock %}
+
+{% block title %}System Configuration - BloodLink Admin{% endblock %}
+{% block page_title %}System Configuration{% endblock %}
+{% block page_subtitle %}Advanced platform management and feature controls{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <!-- Configuration Tabs -->
+    <div class="settings-tabs">
+        <button class="settings-tab active" data-tab="features">
+            <span class="tab-icon">🚀</span>
+            <span class="tab-label">Feature Flags</span>
+        </button>
+        <button class="settings-tab" data-tab="maintenance">
+            <span class="tab-icon">🧹</span>
+            <span class="tab-label">Maintenance</span>
+        </button>
+        <button class="settings-tab" data-tab="health">
+            <span class="tab-icon">🩺</span>
+            <span class="tab-label">System Health</span>
+        </button>
+        <button class="settings-tab" data-tab="advanced-danger">
+            <span class="tab-icon">🧨</span>
+            <span class="tab-label">Advanced Tools</span>
+        </button>
+    </div>
+
+    <!-- Configuration Panes -->
+    <div class="settings-panes">
+
+        <!-- Feature Flags Pane -->
+        <div class="settings-pane active" id="pane-features">
+            <div class="form-section">
+                <h3>Global Feature Flags</h3>
+                <p class="section-desc">Enable or disable core system features across all portals.</p>
+
+                <div class="notification-toggles">
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <strong>Platform Chat System</strong>
+                            <p>Toggle real-time messaging between admins and hospitals</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="flagChatEnabled" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <strong>Hospital Referral Workflow</strong>
+                            <p>Enable the clinical hospital-to-hospital referral system</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="flagReferralsEnabled" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <strong>Donor Public Directory</strong>
+                            <p>Allow hospitals to search for nearby donor contacts</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="flagDonorDirEnabled" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <strong>Audit Logging (Global)</strong>
+                            <p>Enable/Disable background audit event recording</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="flagAuditEnabled" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-primary" id="saveFeaturesBtn">Update Feature Flags</button>
+            </div>
+        </div>
+
+        <!-- Maintenance Pane -->
+        <div class="settings-pane" id="pane-maintenance">
+            <div class="form-section">
+                <h3>Database Maintenance</h3>
+                <p class="section-desc">Perform specialized cleanup and indexing tasks.</p>
+
+                <div class="danger-action">
+                    <div class="danger-info">
+                        <strong>Rebuild User Index</strong>
+                        <p>Synchronize user metadata and backfill missing Auth UIDs across all profiles.</p>
+                    </div>
+                    <button type="button" class="btn-primary" id="rebuildUserIndexBtn">Run Sync</button>
+                </div>
+
+                <div class="danger-action">
+                    <div class="danger-info">
+                        <strong>Clean Orphaned Chats</strong>
+                        <p>Identify and remove chat records with no active messages or missing participants.</p>
+                    </div>
+                    <button type="button" class="btn-outline-danger" id="cleanChatsBtn">Scan & Clean</button>
+                </div>
+
+                <div class="danger-action">
+                    <div class="danger-info">
+                        <strong>Compress Audit Logs</strong>
+                        <p>Archive logs older than 90 days to a cold storage bucket (Firestore -> GCS).</p>
+                    </div>
+                    <button type="button" class="btn-secondary" id="archiveLogsBtn" disabled>Coming Soon</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Health Pane -->
+        <div class="settings-pane" id="pane-health">
+            <div class="form-section">
+                <h3>Live Service Status</h3>
+                <p class="section-desc">Real-time connectivity status for BloodLink infrastructure.</p>
+
+                <div class="health-grid">
+                    <div class="health-card" id="health-firestore">
+                        <span class="health-icon">🔥</span>
+                        <div class="health-info">
+                            <span class="health-label">Cloud Firestore</span>
+                            <span class="health-status status-checking">Checking...</span>
+                        </div>
+                    </div>
+                    <div class="health-card" id="health-rtdb">
+                        <span class="health-icon">⚡</span>
+                        <div class="health-info">
+                            <span class="health-label">Realtime Database</span>
+                            <span class="health-status status-checking">Checking...</span>
+                        </div>
+                    </div>
+                    <div class="health-card" id="health-auth">
+                        <span class="health-icon">🔑</span>
+                        <div class="health-info">
+                            <span class="health-label">Firebase Auth</span>
+                            <span class="health-status status-checking">Checking...</span>
+                        </div>
+                    </div>
+                    <div class="health-card" id="health-server">
+                        <span class="health-icon">🐍</span>
+                        <div class="health-info">
+                            <span class="health-label">Flask Server</span>
+                            <span class="health-status status-online">Connected</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Tools Pane -->
+        <div class="settings-pane" id="pane-advanced-danger">
+            <div class="form-section danger-section">
+                <h3 style="color: var(--danger);">🧨 Advanced Admin Tools</h3>
+                <p class="section-desc">High-privileged operations. Requires extreme caution.</p>
+
+                <div class="danger-action">
+                    <div class="danger-info">
+                        <strong>Global Broadcast</strong>
+                        <p>Send a system-wide notification to ALL registered users (Admins, Hospitals, Donors).</p>
+                    </div>
+                    <button type="button" class="btn-danger" id="globalBroadcastBtn">Initiate Broadcast</button>
+                </div>
+
+                <div class="danger-action">
+                    <div class="danger-info">
+                        <strong>Reset Facility Counters</strong>
+                        <p>Recalculate and reset all unread notification badges across the platform.</p>
+                    </div>
+                    <button type="button" class="btn-outline-danger" id="resetCountersBtn">Reset All</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    /* Re-use Settings Styles from base.html/styles.css or local override */
+    .settings-container {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        min-height: 650px;
+    }
+
+    .settings-tabs {
+        background: var(--gray-50);
+        padding: 24px 12px;
+        border-right: 1px solid var(--gray-200);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    /* System Health Visuals */
+    .health-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 16px;
+        margin-top: 20px;
+    }
+
+    .health-card {
+        background: white;
+        border: 1px solid var(--gray-200);
+        padding: 16px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: transform 0.2s;
+    }
+
+    .health-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .health-icon {
+        font-size: 24px;
+        background: var(--gray-50);
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+    }
+
+    .health-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .health-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+
+    .health-status {
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .status-online {
+        color: #10B981;
+    }
+
+    .status-offline {
+        color: #EF4444;
+    }
+
+    .status-checking {
+        color: var(--text-tertiary);
+    }
+
+    /* Reuse from settings.html */
+    .settings-tab {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border: none;
+        background: transparent;
+        border-radius: 8px;
+        color: var(--text-secondary);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: left;
+        font-size: 14px;
+    }
+
+    .settings-tab.active {
+        background: var(--primary-light);
+        color: var(--primary);
+    }
+
+    .settings-panes {
+        padding: 32px;
+    }
+
+    .settings-pane {
+        display: none;
+    }
+
+    .settings-pane.active {
+        display: block;
+    }
+
+    .form-section {
+        margin-bottom: 32px;
+        border-bottom: 1px solid var(--gray-100);
+        padding-bottom: 24px;
+    }
+
+    .section-desc {
+        color: var(--text-secondary);
+        font-size: 13px;
+        margin-bottom: 20px;
+    }
+
+    .toggle-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--gray-50);
+    }
+
+    .toggle-info strong {
+        font-size: 14px;
+        display: block;
+    }
+
+    .toggle-info p {
+        font-size: 12px;
+        color: var(--text-tertiary);
+        margin: 0;
+    }
+
+    .danger-action {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px;
+        border: 1px solid var(--gray-200);
+        border-radius: 10px;
+        margin-bottom: 12px;
+    }
+
+    .danger-info strong {
+        display: block;
+        font-size: 14px;
+    }
+
+    .danger-info p {
+        font-size: 12px;
+        color: var(--text-tertiary);
+        margin: 0;
+    }
+
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 44px;
+        height: 22px;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 34px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+
+    input:checked+.slider {
+        background-color: var(--success);
+    }
+
+    input:checked+.slider:before {
+        transform: translateX(22px);
+    }
+
+    /* Buttons */
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 10px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-outline-danger {
+        border: 1px solid var(--danger);
+        color: var(--danger);
+        background: transparent;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-danger {
+        background: var(--danger);
+        color: white;
+        border: none;
+        padding: 10px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-secondary {
+        background: var(--gray-200);
+        color: var(--text-primary);
+        border: none;
+        padding: 10px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='system-config.js') }}"></script>
+{% endblock %}

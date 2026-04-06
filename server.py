@@ -12,6 +12,7 @@ CORS(app)
 
 # Welcome/Login Page
 @app.route('/')
+@app.route('/claim')
 def index():
     return render_template('index.html')
 
@@ -23,12 +24,21 @@ def dashboard():
 # Blood Banks Management
 @app.route('/blood-banks')
 def blood_banks():
-    return render_template('blood_banks.html')
+    return render_template('super_admin_hospitals.html')
+
+@app.route('/.well-known/appspecific/com.chrome.devtools.json')
+def chrome_devtools_json():
+    return {"status": "ok"}, 200, {'Content-Type': 'application/json'}
 
 # Donors Management
 @app.route('/donors')
 def donors():
     return render_template('donors.html')
+
+# User Management (Donors & Requesters)
+@app.route('/users')
+def users():
+    return render_template('users.html')
 
 # Blood Requests Management
 @app.route('/requests')
@@ -39,6 +49,125 @@ def requests():
 @app.route('/reviews')
 def reviews():
     return render_template('reviews.html')
+
+# Reports Management
+@app.route('/reports')
+def reports():
+    return render_template('reports.html')
+
+# Verifications Management
+@app.route('/verifications')
+def verifications():
+    return render_template('verifications.html')
+
+# Notifications
+@app.route('/notifications')
+def notifications():
+    return render_template('notifications.html')
+
+# Bookings (Super Admin)
+@app.route('/bookings')
+def bookings():
+    return render_template('bookings.html')
+
+# Referrals
+@app.route('/referrals')
+def referrals():
+    return render_template('referrals.html')
+
+# Chat
+@app.route('/chat')
+def chat():
+    return render_template('chat.html')
+
+# Support Tickets
+@app.route('/tickets')
+def tickets():
+    return render_template('tickets.html')
+
+
+# Hospital Dashboard/Landing
+@app.route('/hospital/dashboard')
+def hospital_dashboard():
+    return render_template('hospital/dashboard.html')
+
+@app.route('/hospital/requests')
+def hospital_requests():
+    return render_template('hospital/requests.html')
+
+@app.route('/hospital/referrals')
+def hospital_referrals():
+    return render_template('hospital/referrals.html')
+
+@app.route('/hospital/referrals/new')
+def hospital_referral_new():
+    return render_template('hospital/referral_new.html')
+
+@app.route('/hospital/policies')
+def hospital_policies():
+    return render_template('hospital/policies.html')
+
+@app.route('/hospital/logs')
+def hospital_logs():
+    return render_template('hospital/logs.html')
+
+@app.route('/hospital/chat')
+def hospital_chat():
+    return render_template('hospital/chat.html')
+
+@app.route('/hospital/reports')
+def hospital_reports():
+    return render_template('hospital/reports.html')
+
+@app.route('/hospital/notifications')
+def hospital_notifications():
+    return render_template('hospital/notifications.html')
+
+@app.route('/hospital/bookings')
+def hospital_bookings():
+    return render_template('hospital/bookings.html')
+
+@app.route('/hospital/donors')
+def hospital_donors():
+    return render_template('hospital/donors.html')
+
+@app.route('/hospital/hospitals')
+def hospital_directory():
+    return render_template('hospital/hospitals.html')
+
+@app.route('/hospital/settings')
+def hospital_settings():
+    return render_template('hospital/settings.html')
+
+# Keep old route for backward compatibility but redirect
+@app.route('/hospital')
+def hospital_redirect():
+    return render_template('hospital/dashboard.html')
+
+# Settings (Super Admin)
+@app.route('/settings')
+def settings():
+    return render_template('settings.html')
+
+# System Configuration (Super Admin)
+@app.route('/system-config')
+def system_config():
+    return render_template('system-config.html')
+
+# Admin Policies
+@app.route('/policies')
+def policies():
+    return render_template('policies.html')
+
+# System Logs (Admin + User Activity)
+@app.route('/system-logs')
+def system_logs():
+    return render_template('system-logs.html')
+
+# Audit Logs (Admin Only)
+@app.route('/audit-logs')
+def audit_logs():
+    return render_template('audit_logs.html')
 
 # ==================== STATIC FILES ====================
 
@@ -75,6 +204,39 @@ def internal_error(error):
         'error': 'Internal server error',
         'message': 'Please try again later'
     }), 500
+
+    # Add these routes to your server.py
+
+# Hospital Bookings API endpoints
+@app.route('/api/hospital/bookings/donor')
+def get_hospital_donor_bookings():
+    """Get donor bookings for a specific hospital"""
+    hospital_id = request.args.get('hospitalId')
+    hospital_code = request.args.get('hospitalCode')
+    
+    if not hospital_id and not hospital_code:
+        return jsonify({'error': 'Hospital ID or code required'}), 400
+    
+    # This will be handled by Firebase on frontend
+    return jsonify({'message': 'Fetch from Firebase client-side'}), 200
+
+@app.route('/api/hospital/bookings/recipient')
+def get_hospital_recipient_bookings():
+    """Get recipient bookings for a specific hospital"""
+    hospital_id = request.args.get('hospitalId')
+    hospital_code = request.args.get('hospitalCode')
+    
+    if not hospital_id and not hospital_code:
+        return jsonify({'error': 'Hospital ID or code required'}), 400
+    
+    return jsonify({'message': 'Fetch from Firebase client-side'}), 200
+
+@app.route('/api/hospital/broadcast', methods=['POST'])
+def create_hospital_broadcast():
+    """Create a blood request broadcast from hospital"""
+    data = request.json
+    # This will be handled by Firebase on frontend
+    return jsonify({'message': 'Broadcast created via Firebase'}), 200
 
 # ==================== SERVER STARTUP ====================
 

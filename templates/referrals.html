@@ -1,0 +1,1031 @@
+{% extends "base.html" %}
+
+{% block title %}Referrals - BloodLink Admin{% endblock %}
+{% block body_class %}notification-theme-view{% endblock %}
+{% block page_title %}Network Referrals{% endblock %}
+{% block page_subtitle %}Monitor all patient referrals across the hospital network{% endblock %}
+
+{% block header_actions %}
+<button class="action-btn action-btn-primary" id="exportBtn" style="gap:6px;">
+    <span>📊</span> Export CSV
+</button>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* ── Referrals Page Variables ── */
+    .referrals-page {
+        --ref-orange: #f97316;
+        --ref-orange-soft: rgba(249, 115, 22, 0.1);
+        --ref-amber: #F59E0B;
+        --ref-amber-soft: rgba(245, 158, 11, .1);
+        --ref-green: #10B981;
+        --ref-green-soft: rgba(16, 185, 129, 0.1);
+        --ref-red: #EF4444;
+        --ref-red-soft: rgba(239, 68, 68, .1);
+        --ref-blue: #3B82F6;
+        --ref-blue-soft: rgba(59, 130, 246, 0.1);
+        --ref-purple: #8B5CF6;
+        --ref-purple-soft: rgba(139, 92, 246, 0.1);
+        --ref-surface: #ffffff;
+        --ref-surface2: #f8fafc;
+        --ref-border: #e2e8f0;
+        --ref-text: #1e293b;
+        --ref-text-muted: #64748b;
+        --ref-radius: 12px;
+    }
+
+    /* ── Stats Strip ── */
+    .ref-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .ref-stat-card {
+        background: var(--ref-surface);
+        border: 1px solid var(--ref-border);
+        border-radius: 16px;
+        padding: 18px 20px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transition: all .25s ease;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    }
+
+    .ref-stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        border-radius: 4px 0 0 4px;
+    }
+
+    .ref-stat-card.card-orange::before {
+        background: var(--ref-orange);
+    }
+
+    .ref-stat-card.card-green::before {
+        background: var(--ref-green);
+    }
+
+    .ref-stat-card.card-blue::before {
+        background: var(--ref-blue);
+    }
+
+    .ref-stat-card.card-purple::before {
+        background: var(--ref-purple);
+    }
+
+    .ref-stat-card:hover {
+        border-color: rgba(255, 255, 255, .15);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, .3);
+    }
+
+    .ref-stat-icon {
+        font-size: 28px;
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .card-orange .ref-stat-icon {
+        background: var(--ref-orange-soft);
+    }
+
+    .card-green .ref-stat-icon {
+        background: var(--ref-green-soft);
+    }
+
+    .card-blue .ref-stat-icon {
+        background: var(--ref-blue-soft);
+    }
+
+    .card-purple .ref-stat-icon {
+        background: var(--ref-purple-soft);
+    }
+
+    .ref-stat-label {
+        font-size: 11px;
+        color: var(--ref-text-muted);
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        margin-bottom: 2px;
+    }
+
+    .ref-stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .card-orange .ref-stat-value {
+        color: var(--ref-orange);
+    }
+
+    .card-green .ref-stat-value {
+        color: var(--ref-green);
+    }
+
+    .card-blue .ref-stat-value {
+        color: var(--ref-blue);
+    }
+
+    .card-purple .ref-stat-value {
+        color: var(--ref-purple);
+    }
+
+    /* ── Toolbar ── */
+    .ref-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .ref-search {
+        position: relative;
+        flex: 1;
+        min-width: 200px;
+        max-width: 340px;
+    }
+
+    .ref-search .search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--ref-text-muted);
+        font-size: 13px;
+    }
+
+    .ref-search input {
+        width: 100%;
+        padding: 10px 14px 10px 38px;
+        background: var(--ref-surface);
+        border: 1px solid var(--ref-border);
+        border-radius: var(--ref-radius);
+        color: var(--ref-text);
+        font-size: 13px;
+        outline: none;
+        transition: border-color .2s;
+    }
+
+    .ref-search input:focus {
+        border-color: var(--ref-orange);
+    }
+
+    .ref-filter-select {
+        padding: 10px 14px;
+        background: var(--ref-surface);
+        border: 1px solid var(--ref-border);
+        border-radius: var(--ref-radius);
+        color: var(--ref-text);
+        font-size: 13px;
+        outline: none;
+        cursor: pointer;
+    }
+
+    .ref-filter-select:focus {
+        border-color: var(--ref-orange);
+    }
+
+    .ref-result-count {
+        margin-left: auto;
+        font-size: 12px;
+        color: var(--ref-text-muted);
+        background: rgba(59, 130, 246, 0.05);
+        border: 1px solid rgba(59, 130, 246, 0.1);
+        border-radius: 20px;
+        padding: 6px 14px;
+    }
+
+    /* ── Table ── */
+    .ref-table-wrap {
+        overflow-x: auto;
+        border-radius: var(--ref-radius);
+        border: 1px solid var(--ref-border);
+    }
+
+    .ref-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--ref-surface);
+    }
+
+    .ref-table th {
+        background: #f1f5f9;
+        padding: 14px 16px;
+        text-align: left;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--ref-text-muted);
+        font-weight: 800;
+        border-bottom: 1px solid var(--ref-border);
+    }
+
+    .ref-table tbody tr {
+        border-top: 1px solid var(--ref-border);
+        cursor: pointer;
+        transition: all .15s ease;
+    }
+
+    .ref-table tbody tr:hover {
+        background: var(--ref-surface2);
+        box-shadow: inset 3px 0 0 var(--ref-orange);
+    }
+
+    .ref-table td {
+        padding: 13px 14px;
+        vertical-align: middle;
+        font-size: 13px;
+    }
+
+    .ref-table .date-cell {
+        color: var(--ref-text-muted);
+        font-size: 11px;
+        white-space: nowrap;
+    }
+
+    .ref-table .reason-cell {
+        color: var(--ref-text-muted);
+        font-size: 12px;
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* ── Cell Pieces ── */
+    .ref-id-chip {
+        background: var(--ref-surface2);
+        border: 1px solid var(--ref-border);
+        border-radius: 6px;
+        padding: 3px 8px;
+        font-size: 10px;
+        font-family: monospace;
+        color: var(--ref-blue);
+    }
+
+    .ref-person-cell {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .ref-person-name {
+        font-weight: 600;
+        color: var(--ref-text);
+    }
+
+    .ref-person-sub {
+        font-size: 11px;
+        color: var(--ref-text-muted);
+    }
+
+    .ref-blood-badge {
+        display: inline-block;
+        background: var(--ref-red-soft);
+        color: var(--ref-red);
+        border: 1px solid rgba(239, 68, 68, .3);
+        border-radius: 6px;
+        padding: 3px 10px;
+        font-weight: 700;
+        font-size: 12px;
+    }
+
+    .ref-urg-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+    }
+
+    .ref-urg-critical {
+        background: var(--ref-red-soft);
+        color: var(--ref-red);
+    }
+
+    .ref-urg-urgent {
+        background: var(--ref-amber-soft);
+        color: var(--ref-amber);
+    }
+
+    .ref-urg-standard {
+        background: var(--ref-blue-soft);
+        color: var(--ref-blue);
+    }
+
+    .ref-status-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 6px;
+        vertical-align: middle;
+    }
+
+    .ref-dot-warning {
+        background: var(--ref-amber);
+        box-shadow: 0 0 6px var(--ref-amber);
+    }
+
+    .ref-dot-success {
+        background: var(--ref-green);
+        box-shadow: 0 0 6px var(--ref-green);
+    }
+
+    .ref-dot-danger {
+        background: var(--ref-red);
+        box-shadow: 0 0 6px var(--ref-red);
+    }
+
+    .ref-dot-accent {
+        background: var(--ref-purple);
+        box-shadow: 0 0 6px var(--ref-purple);
+    }
+
+    .ref-dot-muted {
+        background: var(--ref-text-muted);
+    }
+
+    .ref-status-label {
+        font-size: 12px;
+        text-transform: capitalize;
+    }
+
+    .ref-action-row {
+        display: flex;
+        gap: 6px;
+    }
+
+    .ref-btn-icon {
+        width: 30px;
+        height: 30px;
+        border: 1px solid var(--ref-border);
+        background: var(--ref-surface2);
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all .15s;
+    }
+
+    .ref-btn-icon:hover {
+        transform: scale(1.1);
+        border-color: var(--ref-text-muted);
+    }
+
+    .ref-btn-icon.green {
+        border-color: rgba(16, 185, 129, .4);
+        color: var(--ref-green);
+    }
+
+    .ref-btn-icon.green:hover {
+        background: var(--ref-green-soft);
+    }
+
+    .ref-btn-icon.red {
+        border-color: rgba(239, 68, 68, .4);
+        color: var(--ref-red);
+    }
+
+    .ref-btn-icon.red:hover {
+        background: var(--ref-red-soft);
+    }
+
+    .ref-btn-icon.blue {
+        border-color: rgba(59, 130, 246, .4);
+        color: var(--ref-blue);
+    }
+
+    .ref-btn-icon.blue:hover {
+        background: var(--ref-blue-soft);
+    }
+
+    /* ── Empty ── */
+    .ref-empty-row {
+        text-align: center;
+        padding: 52px !important;
+        color: var(--ref-text-muted);
+    }
+
+    .ref-empty-icon {
+        font-size: 40px;
+        margin-bottom: 10px;
+    }
+
+    /* ── Detail Modal ── */
+    .ref-modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, .65);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .ref-modal-overlay.open {
+        display: flex;
+    }
+
+    .ref-table-card {
+        background: var(--ref-surface);
+        border: 1px solid var(--ref-border);
+        border-radius: 16px;
+        overflow: hidden;
+        margin-top: 24px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    }
+
+    .ref-modal-box {
+        background: var(--ref-surface);
+        border: 1px solid var(--ref-border);
+        border-radius: 16px;
+        width: 100%;
+        max-width: 640px;
+        max-height: 88vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 16px 48px rgba(0, 0, 0, .5);
+        animation: refModalIn .25s ease;
+    }
+
+    @keyframes refModalIn {
+        from {
+            transform: translateY(20px) scale(.97);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+    }
+
+    .ref-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 18px 24px;
+        border-bottom: 1px solid var(--ref-border);
+    }
+
+    .ref-modal-header h2 {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--ref-text);
+    }
+
+    .ref-modal-close {
+        background: var(--ref-surface2);
+        border: 1px solid var(--ref-border);
+        border-radius: 8px;
+        width: 32px;
+        height: 32px;
+        cursor: pointer;
+        color: var(--ref-text);
+        font-size: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all .15s;
+    }
+
+    .ref-modal-close:hover {
+        background: var(--ref-red-soft);
+        color: var(--ref-red);
+    }
+
+    .ref-modal-body {
+        padding: 20px 24px;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .ref-modal-footer {
+        padding: 16px 24px;
+        border-top: 1px solid var(--ref-border);
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .ref-detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-bottom: 14px;
+    }
+
+    .ref-detail-section {
+        background: var(--ref-surface2);
+        border-radius: var(--ref-radius);
+        padding: 16px 18px;
+        border: 1px solid var(--ref-border);
+    }
+
+    .ref-detail-section.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .ref-ds-title {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--ref-text-muted);
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        margin-bottom: 10px;
+    }
+
+    .ref-ds-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 7px 0;
+        border-bottom: 1px solid var(--ref-border);
+        font-size: 13px;
+    }
+
+    .ref-ds-row:last-child {
+        border-bottom: none;
+    }
+
+    .ref-ds-row span {
+        color: var(--ref-text-muted);
+    }
+
+    .ref-ds-row strong {
+        font-weight: 600;
+        color: var(--ref-text);
+    }
+
+    .ref-reason-text {
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--ref-text);
+    }
+
+    .ref-status-pill {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: capitalize;
+    }
+
+    .ref-status-pill.ref-dot-warning {
+        background: var(--ref-amber-soft);
+        color: var(--ref-amber);
+    }
+
+    .ref-status-pill.ref-dot-success {
+        background: var(--ref-green-soft);
+        color: var(--ref-green);
+    }
+
+    .ref-status-pill.ref-dot-danger {
+        background: var(--ref-red-soft);
+        color: var(--ref-red);
+    }
+
+    .ref-status-pill.ref-dot-accent {
+        background: var(--ref-purple-soft);
+        color: var(--ref-purple);
+    }
+
+    .ref-status-pill.ref-dot-muted {
+        background: rgba(156, 163, 175, .12);
+        color: var(--ref-text-muted);
+    }
+
+    /* ── Buttons ── */
+    .ref-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 18px;
+        border-radius: var(--ref-radius);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: all .15s;
+    }
+
+    .ref-btn:hover {
+        opacity: .85;
+        transform: translateY(-1px);
+    }
+
+    .ref-btn-primary {
+        background: var(--ref-orange);
+        color: #fff;
+    }
+
+    .ref-btn-success {
+        background: var(--ref-green);
+        color: #fff;
+    }
+
+    .ref-btn-danger {
+        background: var(--ref-red);
+        color: #fff;
+    }
+
+    .ref-btn-secondary {
+        background: var(--ref-surface2);
+        color: var(--ref-text);
+        border: 1px solid var(--ref-border);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+        .ref-detail-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .ref-stats {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="referrals-page">
+    <!-- Stats -->
+    <div class="ref-stats">
+        <div class="ref-stat-card card-orange">
+            <div class="ref-stat-icon">📊</div>
+            <div>
+                <div class="ref-stat-label">Total Referrals</div>
+                <div class="ref-stat-value" id="totalCount">—</div>
+            </div>
+        </div>
+        <div class="ref-stat-card card-blue">
+            <div class="ref-stat-icon">⏳</div>
+            <div>
+                <div class="ref-stat-label">Pending</div>
+                <div class="ref-stat-value" id="pendingCount">—</div>
+            </div>
+        </div>
+        <div class="ref-stat-card card-green">
+            <div class="ref-stat-icon">✅</div>
+            <div>
+                <div class="ref-stat-label">Accepted</div>
+                <div class="ref-stat-value" id="acceptedCount">—</div>
+            </div>
+        </div>
+        <div class="ref-stat-card card-purple">
+            <div class="ref-stat-icon">🎯</div>
+            <div>
+                <div class="ref-stat-label">Completed</div>
+                <div class="ref-stat-value" id="completedCount">—</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="ref-toolbar">
+        <div class="ref-search">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="refSearch" placeholder="Search patient, hospital…">
+        </div>
+        <select class="ref-filter-select" id="refFilterStatus">
+            <option value="all">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="accepted">Accepted</option>
+            <option value="declined">Declined</option>
+            <option value="completed">Completed</option>
+        </select>
+        <select class="ref-filter-select" id="refFilterBlood">
+            <option value="all">All Blood Types</option>
+            <option>A+</option>
+            <option>A-</option>
+            <option>B+</option>
+            <option>B-</option>
+            <option>AB+</option>
+            <option>AB-</option>
+            <option>O+</option>
+            <option>O-</option>
+        </select>
+        <select class="ref-filter-select" id="refFilterUrgency">
+            <option value="all">All Urgencies</option>
+            <option value="critical">🚨 Critical</option>
+            <option value="urgent">⚠️ Urgent</option>
+            <option value="standard">ℹ️ Standard</option>
+        </select>
+        <span class="ref-result-count" id="refResultCount">0 results</span>
+    </div>
+
+    <!-- Table -->
+    <div class="ref-table-wrap">
+        <table class="ref-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Patient</th>
+                    <th>From Hospital</th>
+                    <th>To Hospital</th>
+                    <th>Blood</th>
+                    <th>Urgency</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="refTableBody">
+                <tr>
+                    <td colspan="9" class="ref-empty-row">
+                        <div class="ref-empty-icon">⏳</div>
+                        <p>Loading referrals…</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="ref-modal-overlay" id="refDetailModal">
+    <div class="ref-modal-box">
+        <div class="ref-modal-header">
+            <h2 id="refDetailTitle">Referral Details</h2>
+            <button class="ref-modal-close" onclick="closeRefModal()">✕</button>
+        </div>
+        <div class="ref-modal-body" id="refDetailBody"></div>
+        <div class="ref-modal-footer" id="refDetailFooter">
+            <button class="ref-btn ref-btn-secondary" onclick="closeRefModal()">Close</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function () {
+        'use strict';
+
+        let allReferrals = [];
+        let unsubscribe = null;
+
+        // ── Initialize ──
+        window.initializePage = window.initializePage || function () { };
+        const originalInit = window.initializePage;
+
+        window.initializePage = function () {
+            // Call original if it was set by referrals.js (overwrite chain)
+            // We override here for the super admin network view
+            console.log('🔗 Initializing Super Admin Network Referrals');
+            initReferrals();
+        };
+
+        function initReferrals() {
+            setupFilters();
+            subscribeAll();
+        }
+
+        // ── Subscribe to ALL referrals network-wide ──
+        function subscribeAll() {
+            if (unsubscribe) unsubscribe();
+
+            unsubscribe = firestore.collection('hospital_referrals')
+                .orderBy('createdAt', 'desc')
+                .onSnapshot(snap => {
+                    allReferrals = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    updateStats();
+                    renderTable();
+                }, err => {
+                    console.error('Referrals subscription error:', err);
+                });
+        }
+
+        // ── Stats ──
+        function updateStats() {
+            setText('totalCount', allReferrals.length);
+            setText('pendingCount', allReferrals.filter(r => r.status === 'pending').length);
+            setText('acceptedCount', allReferrals.filter(r => r.status === 'accepted').length);
+            setText('completedCount', allReferrals.filter(r => r.status === 'completed').length);
+        }
+
+        // ── Filters ──
+        function setupFilters() {
+            ['refSearch', 'refFilterStatus', 'refFilterBlood', 'refFilterUrgency'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', renderTable);
+                    el.addEventListener('change', renderTable);
+                }
+            });
+            const exportBtn = document.getElementById('exportBtn');
+            if (exportBtn) exportBtn.addEventListener('click', exportCSV);
+        }
+
+        // ── Render ──
+        function renderTable() {
+            const tbody = document.getElementById('refTableBody');
+            if (!tbody) return;
+
+            const search = (document.getElementById('refSearch')?.value || '').toLowerCase();
+            const fStatus = document.getElementById('refFilterStatus')?.value || 'all';
+            const fBlood = document.getElementById('refFilterBlood')?.value || 'all';
+            const fUrg = document.getElementById('refFilterUrgency')?.value || 'all';
+
+            let filtered = allReferrals.filter(r => {
+                const ms = fStatus === 'all' || r.status === fStatus;
+                const mb = fBlood === 'all' || r.bloodType === fBlood;
+                const mu = fUrg === 'all' || r.urgency === fUrg;
+                const mq = !search ||
+                    (r.patientName || '').toLowerCase().includes(search) ||
+                    (r.fromHospitalName || '').toLowerCase().includes(search) ||
+                    (r.toHospitalName || '').toLowerCase().includes(search) ||
+                    (r.bloodType || '').toLowerCase().includes(search);
+                return ms && mb && mu && mq;
+            });
+
+            setText('refResultCount', filtered.length + ' result' + (filtered.length !== 1 ? 's' : ''));
+
+            if (!filtered.length) {
+                tbody.innerHTML = '<tr><td colspan="9" class="ref-empty-row"><div class="ref-empty-icon">🔗</div><p>No referrals match your filters.</p></td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(r => {
+                const date = formatDate(r.createdAt);
+                const urgClass = { critical: 'ref-urg-critical', urgent: 'ref-urg-urgent', standard: 'ref-urg-standard' }[r.urgency] || 'ref-urg-standard';
+                const stClass = statusDotClass(r.status);
+
+                return `
+            <tr data-id="${r.id}" onclick="openRefDetail('${r.id}')">
+                <td><span class="ref-id-chip">${shortId(r.id)}</span></td>
+                <td><span class="ref-person-name">${esc(r.patientName || '—')}</span></td>
+                <td><span class="ref-person-sub">${esc(r.fromHospitalName || '—')}</span></td>
+                <td><span class="ref-person-sub">${esc(r.toHospitalName || '—')}</span></td>
+                <td><span class="ref-blood-badge">${esc(r.bloodType || '?')}</span></td>
+                <td><span class="ref-urg-badge ${urgClass}">${capitalize(r.urgency || 'standard')}</span></td>
+                <td class="date-cell">${date}</td>
+                <td>
+                    <span class="ref-status-dot ${stClass}"></span>
+                    <span class="ref-status-label">${capitalize(r.status || 'pending')}</span>
+                </td>
+                <td>
+                    <div class="ref-action-row">
+                        <button class="ref-btn-icon" title="View" onclick="event.stopPropagation();openRefDetail('${r.id}')">👁</button>
+                    </div>
+                </td>
+            </tr>`;
+            }).join('');
+        }
+
+        // ── Detail Modal ──
+        window.openRefDetail = function (id) {
+            const r = allReferrals.find(x => x.id === id);
+            if (!r) return;
+
+            const date = formatDateTime(r.createdAt);
+            const stClass = statusDotClass(r.status);
+            const urgClass = { critical: 'ref-urg-critical', urgent: 'ref-urg-urgent', standard: 'ref-urg-standard' }[r.urgency] || 'ref-urg-standard';
+
+            document.getElementById('refDetailTitle').textContent = `Referral · ${shortId(id)}`;
+            document.getElementById('refDetailBody').innerHTML = `
+            <div class="ref-detail-grid">
+                <div class="ref-detail-section">
+                    <div class="ref-ds-title">🏥 Routing</div>
+                    <div class="ref-ds-row"><span>From</span><strong>${esc(r.fromHospitalName || '—')}</strong></div>
+                    <div class="ref-ds-row"><span>To</span><strong>${esc(r.toHospitalName || '—')}</strong></div>
+                    <div class="ref-ds-row"><span>Status</span>
+                        <span class="ref-status-pill ${stClass}">${capitalize(r.status || 'pending')}</span>
+                    </div>
+                    <div class="ref-ds-row"><span>Created</span><strong>${date}</strong></div>
+                </div>
+                <div class="ref-detail-section">
+                    <div class="ref-ds-title">🩸 Medical</div>
+                    <div class="ref-ds-row"><span>Patient</span><strong>${esc(r.patientName || '—')}</strong></div>
+                    <div class="ref-ds-row"><span>Blood Type</span><strong>${esc(r.bloodType || '—')}</strong></div>
+                    <div class="ref-ds-row"><span>Urgency</span>
+                        <span class="ref-urg-badge ${urgClass}">${capitalize(r.urgency || 'standard')}</span>
+                    </div>
+                    <div class="ref-ds-row"><span>Units</span><strong>${r.units || '—'}</strong></div>
+                </div>
+            </div>
+            <div class="ref-detail-section full-width">
+                <div class="ref-ds-title">📋 Reason for Referral</div>
+                <p class="ref-reason-text">${esc(r.reason || 'No reason provided.')}</p>
+            </div>
+            ${r.notes ? `
+            <div class="ref-detail-section full-width" style="margin-top:14px;">
+                <div class="ref-ds-title">📝 Additional Notes</div>
+                <p class="ref-reason-text">${esc(r.notes)}</p>
+            </div>` : ''}
+        `;
+
+            // Footer — super admin can update status
+            const footer = document.getElementById('refDetailFooter');
+            footer.innerHTML = `<button class="ref-btn ref-btn-secondary" onclick="closeRefModal()">Close</button>`;
+            if (r.status === 'pending') {
+                footer.innerHTML += `
+                <button class="ref-btn ref-btn-danger" onclick="updateRefStatus('${id}','declined')">✖ Decline</button>
+                <button class="ref-btn ref-btn-success" onclick="updateRefStatus('${id}','accepted')">✔ Accept</button>`;
+            }
+            if (r.status === 'accepted') {
+                footer.innerHTML += `
+                <button class="ref-btn ref-btn-primary" onclick="updateRefStatus('${id}','completed')">🎯 Complete</button>`;
+            }
+
+            document.getElementById('refDetailModal').classList.add('open');
+        };
+
+        window.closeRefModal = function () {
+            document.getElementById('refDetailModal').classList.remove('open');
+        };
+
+        // ── Status Update ──
+        window.updateRefStatus = async function (id, status) {
+            try {
+                await firestore.collection('hospital_referrals').doc(id).update({
+                    status,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                if (window.utils?.showNotification) window.utils.showNotification(`Referral marked as ${status}`, 'success');
+                closeRefModal();
+            } catch (e) {
+                console.error(e);
+                if (window.utils?.showNotification) window.utils.showNotification('Failed to update referral', 'error');
+            }
+        };
+
+        // ── Export CSV ──
+        function exportCSV() {
+            const headers = ['ID', 'Patient', 'Blood Type', 'Urgency', 'From', 'To', 'Status', 'Created', 'Reason'];
+            const data = allReferrals.map(r => {
+                const date = formatDate(r.createdAt);
+                return [r.id, r.patientName, r.bloodType, r.urgency,
+                r.fromHospitalName, r.toHospitalName, r.status, date, r.reason]
+                    .map(v => `"${(v ?? '').toString().replace(/"/g, '""')}"`);
+            });
+            const csv = [headers, ...data].map(r => r.join(',')).join('\n');
+            const a = Object.assign(document.createElement('a'), {
+                href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })),
+                download: `referrals_network_${new Date().toISOString().slice(0, 10)}.csv`
+            });
+            a.click();
+        }
+
+        // ── Helpers ──
+        function shortId(id) { return id ? id.slice(-8).toUpperCase() : '?'; }
+        function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+        function esc(s) {
+            return String(s || '').replace(/[<>&"]/g, c =>
+                ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+        }
+        function statusDotClass(s) {
+            return {
+                pending: 'ref-dot-warning', accepted: 'ref-dot-success', declined: 'ref-dot-danger',
+                completed: 'ref-dot-accent', cancelled: 'ref-dot-muted'
+            }[s] || 'ref-dot-warning';
+        }
+        function formatDate(val) {
+            if (!val) return '—';
+            const d = val.toDate ? val.toDate() : new Date(val);
+            return d.toLocaleDateString('en-KE');
+        }
+        function formatDateTime(val) {
+            if (!val) return '—';
+            const d = val.toDate ? val.toDate() : new Date(val);
+            return d.toLocaleString('en-KE');
+        }
+        function setText(id, val) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = val;
+        }
+
+        // Backdrop click closes modal
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('refDetailModal');
+            if (modal) modal.addEventListener('click', e => { if (e.target === modal) closeRefModal(); });
+        });
+    })();
+</script>
+{% endblock %}

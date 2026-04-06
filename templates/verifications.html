@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block body_class %}notification-theme-view{% endblock %}
+
+{% block title %}Verifications - BloodLink Admin{% endblock %}
+{% block page_title %}Verifications{% endblock %}
+{% block page_subtitle %}Review donor credentials and clinical blood request documents{% endblock %}
+
+{% block header_actions %}
+<div class="header-tab-nav">
+    <button class="tab-btn active" data-tab="donors">
+        <span class="tab-icon">👤</span>
+        Donor Verifications
+        <span class="tab-count" id="donorCount">0</span>
+    </button>
+    <button class="tab-btn" data-tab="requests">
+        <span class="tab-icon">🩸</span>
+        Blood Requests
+        <span class="tab-count" id="requestCount">0</span>
+    </button>
+    <button class="tab-btn" data-tab="disputes">
+        <span class="tab-icon">⚖️</span>
+        Disputes
+        <span class="tab-count" id="disputeCount">0</span>
+    </button>
+    <button class="tab-btn" data-tab="locks">
+        <span class="tab-icon">🔒</span>
+        Hospital Locks
+        <span class="tab-count" id="lockCount">0</span>
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="verifications-container">
+    <!-- Donor Verifications Tab -->
+    <div id="donorsTab" class="tab-content active">
+        <div class="filter-bar">
+            <div class="filter-group">
+                <button class="filter-chip active" data-status="pending">
+                    <span class="filter-icon">⏳</span>
+                    Pending
+                    <span class="filter-badge" id="donorPendingCount">0</span>
+                </button>
+                <button class="filter-chip" data-status="approved">
+                    <span class="filter-icon">✅</span>
+                    Approved
+                    <span class="filter-badge" id="donorApprovedCount">0</span>
+                </button>
+                <button class="filter-chip" data-status="rejected">
+                    <span class="filter-icon">❌</span>
+                    Rejected
+                    <span class="filter-badge" id="donorRejectedCount">0</span>
+                </button>
+            </div>
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-box" id="donorSearch"
+                    placeholder="Search by name, email, or blood type...">
+            </div>
+        </div>
+
+        <div class="verifications-grid" id="donorVerificationsList">
+            <div class="loading-state">
+                <div class="loading-spinner"></div>
+                <p>Loading donor verifications...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Blood Request Verifications Tab -->
+    <div id="requestsTab" class="tab-content">
+        <div class="filter-bar">
+            <div class="filter-group">
+                <button class="filter-chip active" data-status="pending">
+                    <span class="filter-icon">⏳</span>
+                    Pending
+                    <span class="filter-badge" id="requestPendingCount">0</span>
+                </button>
+                <button class="filter-chip" data-status="approved">
+                    <span class="filter-icon">✅</span>
+                    Approved
+                    <span class="filter-badge" id="requestApprovedCount">0</span>
+                </button>
+                <button class="filter-chip" data-status="rejected">
+                    <span class="filter-icon">❌</span>
+                    Rejected
+                    <span class="filter-badge" id="requestRejectedCount">0</span>
+                </button>
+            </div>
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-box" id="requestSearch"
+                    placeholder="Search by patient, hospital, or blood type...">
+            </div>
+        </div>
+
+        <div class="verifications-grid" id="requestVerificationsList">
+            <div class="loading-state">
+                <div class="loading-spinner"></div>
+                <p>Loading blood request verifications...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Donation Disputes Tab -->
+    <div id="disputesTab" class="tab-content">
+        <div class="filter-bar">
+            <div class="filter-group">
+                <button class="filter-chip active" data-status="disputed">
+                    <span class="filter-icon">⚠️</span>
+                    Disputed
+                    <span class="filter-badge" id="disputeDisputedCount">0</span>
+                </button>
+                <button class="filter-chip" data-status="verified">
+                    <span class="filter-icon">✅</span>
+                    Resolved (Verified)
+                    <span class="filter-badge" id="disputeVerifiedCount">0</span>
+                </button>
+                <button class="filter-chip" data-status="cancelled">
+                    <span class="filter-icon">❌</span>
+                    Resolved (Cancelled)
+                    <span class="filter-badge" id="disputeCancelledCount">0</span>
+                </button>
+            </div>
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-box" id="disputeSearch"
+                    placeholder="Search by donor or requester name...">
+            </div>
+        </div>
+
+        <div class="verifications-grid" id="disputesList">
+            <div class="loading-state">
+                <div class="loading-spinner"></div>
+                <p>Loading donation disputes...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hospital Account Locks Tab -->
+    <div id="locksTab" class="tab-content">
+        <div class="filter-bar">
+            <div class="filter-group">
+                <button class="filter-chip active" data-status="locked">
+                    <span class="filter-icon">🔒</span>
+                    Locked
+                    <span class="filter-badge" id="hospitalLockedCount">0</span>
+                </button>
+            </div>
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-box" id="hospitalSearch"
+                    placeholder="Search hospital by name or email...">
+            </div>
+        </div>
+
+        <div class="verifications-grid" id="hospitalLocksList">
+            <div class="loading-state">
+                <div class="loading-spinner"></div>
+                <p>Loading locked accounts...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Verification Details Modal -->
+<div id="verificationModal" class="modal-overlay hidden">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <div>
+                <h2 id="modalTitle">Verification Details</h2>
+                <p class="modal-subtitle">Review and verify the submitted documents</p>
+            </div>
+            <button class="modal-close" id="closeModal">✕</button>
+        </div>
+
+        <div id="verificationDetails" class="verification-details">
+            <!-- Dynamic content -->
+        </div>
+
+        <div id="documentPreviews" class="document-previews">
+            <!-- Document previews -->
+        </div>
+
+        <div class="modal-notes-wrap">
+            <label class="modal-label">Admin Notes</label>
+            <textarea id="adminNotes" class="modal-textarea" rows="3"
+                placeholder="Add notes about this verification..."></textarea>
+        </div>
+
+        <div class="modal-actions" id="modalFooter">
+            <button class="btn-secondary" id="cancelModalBtn">Cancel</button>
+            <button class="btn-primary btn-approve" id="approveBtn">✅ Approve</button>
+            <button class="btn-danger" id="rejectBtn">❌ Reject</button>
+        </div>
+    </div>
+</div>
+
+<!-- Image Preview Modal -->
+<div id="imageOverlay" class="image-overlay hidden">
+    <div class="overlay-content">
+        <button class="close-overlay" id="closeImageOverlay">✕</button>
+        <img id="overlayImage" src="" alt="Document Preview">
+        <a id="overlayOriginalBtn" href="#" target="_blank" class="view-original-btn">View Original</a>
+        <div id="overlayCaption" class="overlay-caption"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='verifications.js') }}"></script>
+<script>
+    // Initialize the page when DOM is ready
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof window.initializeVerifications === 'function') {
+            window.initializeVerifications();
+        }
+    });
+</script>
+{% endblock %}

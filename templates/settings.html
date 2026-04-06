@@ -1,0 +1,699 @@
+{% extends "base.html" %}
+
+{% block body_class %}notification-theme-view{% endblock %}
+
+{% block title %}Settings - BloodLink Admin{% endblock %}
+{% block page_title %}Settings{% endblock %}
+{% block page_subtitle %}Platform configuration, security, and admin profile{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <!-- Settings Tabs -->
+    <div class="settings-tabs">
+        <button class="settings-tab active" data-tab="platform">
+            <span class="tab-icon">⚙️</span>
+            <span class="tab-label">Platform</span>
+        </button>
+        <button class="settings-tab" data-tab="profile">
+            <span class="tab-icon">👤</span>
+            <span class="tab-label">Admin Profile</span>
+        </button>
+        <button class="settings-tab" data-tab="notifications-settings">
+            <span class="tab-icon">🔔</span>
+            <span class="tab-label">Notifications</span>
+        </button>
+        <button class="settings-tab" data-tab="security">
+            <span class="tab-icon">🔒</span>
+            <span class="tab-label">Security</span>
+        </button>
+        <button class="settings-tab" data-tab="danger">
+            <span class="tab-icon">⚠️</span>
+            <span class="tab-label">Danger Zone</span>
+        </button>
+    </div>
+
+    <!-- Settings Panes -->
+    <div class="settings-panes">
+
+        <!-- Platform Settings Pane -->
+        <div class="settings-pane active" id="pane-platform">
+            <form id="platformSettingsForm" class="settings-form">
+                <div class="form-section">
+                    <h3>Platform Identity</h3>
+                    <p class="section-desc">Configure the public-facing details of the BloodLink platform.</p>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Platform Name</label>
+                            <input type="text" id="platformName" value="BloodLink" placeholder="e.g. BloodLink Kenya">
+                        </div>
+                        <div class="form-group">
+                            <label>Support Email</label>
+                            <input type="email" id="supportEmail" placeholder="support@bloodlink.co.ke">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Support Phone</label>
+                            <input type="tel" id="supportPhone" placeholder="+254 700 123 456">
+                        </div>
+                        <div class="form-group">
+                            <label>Platform Region</label>
+                            <select id="platformRegion">
+                                <option value="KE">Kenya</option>
+                                <option value="EAC">East Africa</option>
+                                <option value="ALL">Global</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Blood Request Settings</h3>
+                    <p class="section-desc">Configure default behaviors for blood request management.</p>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Auto-Expire Requests After (Days)</label>
+                            <input type="number" id="requestExpiryDays" value="7" min="1" max="90">
+                        </div>
+                        <div class="form-group">
+                            <label>Max Active Requests Per User</label>
+                            <input type="number" id="maxActiveRequests" value="5" min="1" max="20">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Default Request Priority</label>
+                            <select id="defaultPriority">
+                                <option value="normal">Normal</option>
+                                <option value="urgent">Urgent</option>
+                                <option value="critical">Critical (Emergency)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Require Admin Approval</label>
+                            <select id="requireApproval">
+                                <option value="yes">Yes — All Requests</option>
+                                <option value="urgent_only">Urgent/Critical Only</option>
+                                <option value="no">No — Auto-Approve</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Donor Verification</h3>
+                    <p class="section-desc">Control how donor verifications are processed.</p>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Verification Mode</label>
+                            <select id="verificationMode">
+                                <option value="manual">Manual Review (Recommended)</option>
+                                <option value="auto">Auto-Approve All</option>
+                                <option value="strict">Strict — Require 2 Documents</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Minimum Donor Age</label>
+                            <input type="number" id="minDonorAge" value="18" min="16" max="25">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary" id="savePlatformBtn">
+                        <span class="btn-spinner hidden">🔄</span>
+                        Save Platform Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Admin Profile Pane -->
+        <div class="settings-pane" id="pane-profile">
+            <form id="adminProfileForm" class="settings-form">
+                <div class="form-section">
+                    <h3>Your Profile</h3>
+                    <p class="section-desc">Update your admin profile information.</p>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Display Name</label>
+                            <input type="text" id="adminDisplayName" placeholder="Your name">
+                        </div>
+                        <div class="form-group">
+                            <label>Email Address</label>
+                            <input type="email" id="adminEmail" readonly>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Role</label>
+                            <input type="text" id="adminRole" value="Super Admin" readonly
+                                style="background: var(--gray-50); font-weight: 600; color: var(--primary);">
+                        </div>
+                        <div class="form-group">
+                            <label>Account Created</label>
+                            <input type="text" id="adminCreatedAt" readonly style="background: var(--gray-50);">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary" id="saveProfileBtn">
+                        <span class="btn-spinner hidden">🔄</span>
+                        Update Profile
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Notifications Settings Pane -->
+        <div class="settings-pane" id="pane-notifications-settings">
+            <div class="form-section">
+                <h3>Notification Preferences</h3>
+                <p class="section-desc">Choose which events trigger admin notifications.</p>
+
+                <div class="notification-toggles">
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <strong>New Blood Requests</strong>
+                            <p>Notify when a new blood request is submitted</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="notifNewRequests" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <strong>Donor Verifications</strong>
+                            <p>Notify when a donor submits documents for verification</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="notifVerifications" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <strong>Critical Stock Alerts</strong>
+                            <p>Notify when any blood bank reaches critical stock levels</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="notifCriticalStock" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <strong>New Hospital Registrations</strong>
+                            <p>Notify when a new hospital admin account is created</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="notifNewHospitals" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <strong>Referral Activity</strong>
+                            <p>Notify when hospital referrals are created or updated</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="notifReferrals">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <strong>User Reviews</strong>
+                            <p>Notify when users submit new reviews</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="notifReviews">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-primary" id="saveNotifSettingsBtn">Save Notification
+                        Settings</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Pane -->
+        <div class="settings-pane" id="pane-security">
+            <div class="form-section">
+                <h3>Change Password</h3>
+                <p class="section-desc">Update your account password. You'll need to enter your current password for
+                    verification.</p>
+                <div class="form-group">
+                    <label>Current Password</label>
+                    <input type="password" id="currentPassword" placeholder="Enter current password">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>New Password</label>
+                        <input type="password" id="newPassword" placeholder="Minimum 8 characters">
+                    </div>
+                    <div class="form-group">
+                        <label>Confirm New Password</label>
+                        <input type="password" id="confirmPassword" placeholder="Re-enter new password">
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-primary" id="updatePasswordBtn">Update Password</button>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Active Sessions</h3>
+                <p class="section-desc">Your current login session information.</p>
+                <div class="session-info-card">
+                    <div class="session-row">
+                        <span class="session-label">Signed in as:</span>
+                        <span class="session-value" id="sessionEmail">—</span>
+                    </div>
+                    <div class="session-row">
+                        <span class="session-label">Last sign-in:</span>
+                        <span class="session-value" id="sessionLastLogin">—</span>
+                    </div>
+                    <div class="session-row">
+                        <span class="session-label">Auth Provider:</span>
+                        <span class="session-value" id="sessionProvider">Email/Password</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danger Zone Pane -->
+        <div class="settings-pane" id="pane-danger">
+            <div class="form-section danger-section">
+                <h3 style="color: var(--danger);">⚠️ Danger Zone</h3>
+                <p class="section-desc">Irreversible platform-wide actions. Use with extreme caution.</p>
+
+                <div class="danger-action">
+                    <div class="danger-info">
+                        <strong>Export All Data</strong>
+                        <p>Download a full backup of all platform data as JSON files.</p>
+                    </div>
+                    <button type="button" class="btn-outline-danger" id="exportDataBtn">Export Data</button>
+                </div>
+
+                <div class="danger-action">
+                    <div class="danger-info">
+                        <strong>Clear All Notifications</strong>
+                        <p>Permanently delete all read notifications from the system.</p>
+                    </div>
+                    <button type="button" class="btn-outline-danger" id="clearNotificationsBtn">Clear All</button>
+                </div>
+
+                <div class="danger-action">
+                    <div class="danger-info">
+                        <strong>Purge Expired Requests</strong>
+                        <p>Permanently remove all expired and rejected blood requests older than 30 days.</p>
+                    </div>
+                    <button type="button" class="btn-outline-danger" id="purgeRequestsBtn">Purge</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    .settings-container {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        gap: 0;
+        background: white;
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        min-height: 600px;
+    }
+
+    .settings-tabs {
+        background: var(--gray-50);
+        padding: 24px 12px;
+        border-right: 1px solid var(--gray-200);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .settings-tab {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border: none;
+        background: transparent;
+        border-radius: var(--border-radius-sm);
+        color: var(--text-secondary);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: left;
+        font-size: 14px;
+    }
+
+    .settings-tab:hover {
+        background: var(--gray-100);
+        color: var(--primary);
+    }
+
+    .settings-tab.active {
+        background: var(--primary-light);
+        color: var(--primary);
+        box-shadow: inset 3px 0 0 var(--primary);
+    }
+
+    .tab-icon {
+        font-size: 18px;
+    }
+
+    .settings-panes {
+        padding: 32px;
+        overflow-y: auto;
+    }
+
+    .settings-pane {
+        display: none;
+        animation: fadeInPane 0.3s ease-out;
+    }
+
+    .settings-pane.active {
+        display: block;
+    }
+
+    @keyframes fadeInPane {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .form-section {
+        margin-bottom: 32px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid var(--gray-100);
+    }
+
+    .form-section:last-child {
+        border-bottom: none;
+    }
+
+    .form-section h3 {
+        font-size: 18px;
+        margin-bottom: 4px;
+        color: var(--text-primary);
+    }
+
+    .section-desc {
+        color: var(--text-secondary);
+        font-size: 13px;
+        margin-bottom: 20px;
+        line-height: 1.5;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 16px;
+    }
+
+    .form-group label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 10px 14px;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--border-radius-sm);
+        font-size: 14px;
+        transition: border-color 0.2s ease;
+        background: white;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-group input[readonly] {
+        background: var(--gray-50);
+        color: var(--text-secondary);
+        cursor: default;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 24px;
+    }
+
+    /* Notification Toggles */
+    .notification-toggles {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .toggle-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--gray-100);
+    }
+
+    .toggle-row:last-child {
+        border-bottom: none;
+    }
+
+    .toggle-info strong {
+        display: block;
+        font-size: 14px;
+        color: var(--text-primary);
+        margin-bottom: 2px;
+    }
+
+    .toggle-info p {
+        font-size: 12px;
+        color: var(--text-tertiary);
+        margin: 0;
+    }
+
+    /* Switch toggle */
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 44px;
+        height: 22px;
+        flex-shrink: 0;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .3s;
+        border-radius: 22px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        transition: .3s;
+        border-radius: 50%;
+    }
+
+    input:checked+.slider {
+        background-color: var(--success);
+    }
+
+    input:checked+.slider:before {
+        transform: translateX(22px);
+    }
+
+    /* Session info card */
+    .session-info-card {
+        background: var(--gray-50);
+        border-radius: var(--border-radius-sm);
+        padding: 20px;
+        border: 1px solid var(--gray-200);
+    }
+
+    .session-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px dashed var(--gray-200);
+    }
+
+    .session-row:last-child {
+        border-bottom: none;
+    }
+
+    .session-label {
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-weight: 600;
+    }
+
+    .session-value {
+        font-size: 13px;
+        color: var(--text-primary);
+    }
+
+    /* Danger zone */
+    .danger-section {
+        border-color: rgba(239, 68, 68, 0.15) !important;
+    }
+
+    .danger-action {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px;
+        margin-bottom: 12px;
+        border: 1px solid rgba(239, 68, 68, 0.15);
+        border-radius: var(--border-radius-sm);
+        background: rgba(239, 68, 68, 0.03);
+    }
+
+    .danger-info strong {
+        display: block;
+        font-size: 14px;
+        color: var(--text-primary);
+        margin-bottom: 2px;
+    }
+
+    .danger-info p {
+        font-size: 12px;
+        color: var(--text-tertiary);
+        margin: 0;
+    }
+
+    .btn-outline-danger {
+        padding: 8px 20px;
+        border: 1px solid var(--danger);
+        background: transparent;
+        color: var(--danger);
+        border-radius: var(--border-radius-sm);
+        font-weight: 600;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+
+    .btn-outline-danger:hover {
+        background: var(--danger);
+        color: white;
+    }
+
+    .btn-spinner {
+        display: inline-block;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .settings-container {
+            grid-template-columns: 1fr;
+        }
+
+        .settings-tabs {
+            flex-direction: row;
+            overflow-x: auto;
+            padding: 12px;
+            border-right: none;
+            border-bottom: 1px solid var(--gray-200);
+            gap: 4px;
+        }
+
+        .settings-tab {
+            padding: 8px 12px;
+            white-space: nowrap;
+            font-size: 13px;
+        }
+
+        .settings-tab.active {
+            box-shadow: none;
+        }
+
+        .tab-label {
+            display: none;
+        }
+
+        .tab-icon {
+            font-size: 20px;
+        }
+
+        .settings-panes {
+            padding: 20px;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .danger-action {
+            flex-direction: column;
+            gap: 12px;
+            align-items: flex-start;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='settings.js') }}"></script>
+{% endblock %}

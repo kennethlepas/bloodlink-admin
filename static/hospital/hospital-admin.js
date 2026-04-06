@@ -1,0 +1,531 @@
+/**
+ * Hospital Admin Dashboard Module
+ * Handles hospital-specific functionality with restricted access
+ */
+
+(function () {
+    'use strict';
+
+    // State
+    let currentHospital = null;
+    let hospitalInventory = {};
+    let hospitalRequests = [];
+    let hospitalReferrals = [];
+    let currentBankId = null; // To be synced from RTDB
+
+    // Unified Entry Point
+    window.initializePage = async function () {
+        console.log('Initializing Hospital Dashboard...');
+        window.updateHospitalSidebar();
+
+        if (window.hospitalData) {
+            currentHospital = window.hospitalData;
+        } else if (localStorage.getItem('hospitalData')) {
+            currentHospital = JSON.parse(localStorage.getItem('hospitalData'));
+        }
+
+        if (currentHospital) {
+            const pageSubtitle = document.querySelector('.page-subtitle');
+            if (pageSubtitle) pageSubtitle.textContent = `Overview of ${currentHospital.name}'s blood banking operations`;
+
+            // --- Cache Load (Instant) ---
+            try {
+                const cachedInv = localStorage.getItem(`inv_cache_${currentHospital.email}`);
+                const cachedReq = localStorage.getItem(`req_cache_${currentHospital.email}`);
+                const cachedRef = localStorage.getItem(`ref_cache_${currentHospital.email}`);
+                const cachedBankId = localStorage.getItem(`bank_id_${currentHospital.email}`);
+
+                if (cachedInv) hospitalInventory = JSON.parse(cachedInv);
+                if (cachedReq) hospitalRequests = JSON.parse(cachedReq);
+                if (cachedRef) hospitalReferrals = JSON.parse(cachedRef);
+                if (cachedBankId) currentBankId = cachedBankId;
+
+                updateHospitalStats(); // Render cached data immediately
+                console.log('⚡ Dashboard metrics loaded from local cache');
+            } catch (e) { console.warn('Cache load failed', e); }
+
+            // High priority: Discover Bank ID & Load Core Data
+            await loadHospitalData();
+
+            // Lower priority: background background sync
+            setupHospitalEventListeners();
+            updateHospitalStats();
+            renderRecentActivity();
+            console.log('✅ Hospital Dashboard live data synced for:', currentHospital.name);
+        }
+    };
+
+    window.initializeHospitalDashboard = window.initializePage;
+
+    /**
+     * Discover RTDB Bank ID and Load hospital-specific data
+     */
+    async function loadHospitalData() {
+        if (!currentHospital) return;
+        const emailKey = currentHospital.email.replace(/\./g, ',');
+
+        // 1. Discover RTDB ID (If not already found)
+        const bankDiscoveryPromise = new Promise((resolve) => {
+            if (currentBankId) return resolve();
+            database.ref('bloodBanks').orderByChild('email').equalTo(currentHospital.email).once('value', snapshot => {
+                if (snapshot.exists()) {
+                    currentBankId = Object.keys(snapshot.val())[0];
+                    localStorage.setItem(`bank_id_${currentHospital.email}`, currentBankId);
+                    console.log('🔗 Mapped to RTDB Bank ID:', currentBankId);
+                }
+                resolve();
+            }, () => resolve());
+        });
+
+        // 2. Load hospital inventory
+        const inventoryPromise = new Promise((resolve) => {
+            firestore.collection('hospitals').doc(emailKey)
+                .collection('inventory').onSnapshot(snapshot => {
+                    hospitalInventory = {};
+                    snapshot.forEach(doc => {
+                        hospitalInventory[doc.id] = doc.data();
+                    });
+                    localStorage.setItem(`inv_cache_${currentHospital.email}`, JSON.stringify(hospitalInventory));
+                    renderHospitalInventory();
+                    resolve();
+                }, error => {
+                    console.error('Error loading inventory:', error);
+                    resolve();
+                });
+        });
+
+        // 3. Load hospital blood requests
+        const requestsPromise = new Promise((resolve) => {
+            firestore.collection('bloodRequests')
+                .where('hospitalEmail', '==', currentHospital.email)
+                .onSnapshot(snapshot => {
+                    hospitalRequests = [];
+                    snapshot.forEach(doc => {
+                        hospitalRequests.push({ id: doc.id, ...doc.data() });
+                    });
+                    localStorage.setItem(`req_cache_${currentHospital.email}`, JSON.stringify(hospitalRequests));
+                    renderHospitalRequests();
+                    resolve();
+                }, error => {
+                    console.error('Error loading requests:', error);
+                    resolve();
+                });
+        });
+
+        // 4. Load hospital referrals
+        const referralsPromise = new Promise((resolve) => {
+            firestore.collection('referrals')
+                .where('sourceHospital', '==', currentHospital.email)
+                .onSnapshot(snapshot => {
+                    hospitalReferrals = [];
+                    snapshot.forEach(doc => {
+                        hospitalReferrals.push({ id: doc.id, ...doc.data() });
+                    });
+                    localStorage.setItem(`ref_cache_${currentHospital.email}`, JSON.stringify(hospitalReferrals));
+                    renderHospitalReferrals();
+                    resolve();
+                }, error => {
+                    console.error('Error loading referrals:', error);
+                    resolve();
+                });
+        });
+
+        // Use Promise.all to fetch everything at once
+        return Promise.all([bankDiscoveryPromise, inventoryPromise, requestsPromise, referralsPromise]);
+    }
+
+    /**
+     * Render hospital inventory
+     */
+    function renderHospitalInventory() {
+        const container = document.getElementById('hospitalInventoryGrid');
+        if (!container) return;
+
+        const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
+        if (Object.keys(hospitalInventory).length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🩸</div>
+                    <p>No inventory data available</p>
+                    <p style="font-size: 12px; margin-top: 8px;">Click "Update Inventory" to add blood stock levels</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = bloodTypes.map(type => {
+            const inv = hospitalInventory[type] || { units: 0 };
+            const units = inv.units || 0;
+            const percentage = Math.min((units / 20) * 100, 100); // 20 units as arbitrary "full" for display
+
+            let statusClass = '';
+            if (units === 0) statusClass = 'no-stock';
+            else if (units <= 2) statusClass = 'low-stock';
+
+            return `
+                <div class="blood-type-card ${statusClass}">
+                    <div class="type-label">${type}</div>
+                    <div class="unit-count">${units} unit${units !== 1 ? 's' : ''}</div>
+                    <div class="stock-bar-container">
+                        <div class="stock-bar-fill" style="width: ${percentage}%"></div>
+                    </div>
+                    <div class="blood-card-footer-mini" style="margin-top: 12px; display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-tertiary);">
+                        <span>🏥</span>
+                        <span>Your Facility</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Update total stock summary
+        const bloodTypesList = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+        const totalUnits = bloodTypesList.reduce((sum, type) => {
+            return sum + (hospitalInventory[type]?.units || 0);
+        }, 0);
+
+        const typesWithStock = bloodTypesList.filter(type => (hospitalInventory[type]?.units || 0) > 0).length;
+
+        // Update Dashboard Stat Cards (Support both ID and data-stat selectors)
+        const stockEl = document.getElementById('hospitalBloodStock') || document.querySelector('[data-stat="stock"] .stat-value');
+        if (stockEl) {
+            stockEl.textContent = totalUnits.toLocaleString();
+            console.log(`📊 Dashboard Stat Update: Blood Stock = ${totalUnits} (${typesWithStock} types)`);
+        }
+    }
+
+    /**
+     * Get stock status
+     * @param {number} units - Number of units
+     * @returns {object} Status info
+     */
+    function getStockStatus(units) {
+        if (units === 0) {
+            return { label: 'OUT OF STOCK', class: 'status-critical', emoji: '🔴', color: '#FFFFFF', bg: '#000000' };
+        }
+        if (units < 5) {
+            return { label: 'CRITICAL', class: 'status-critical', emoji: '🚨', color: '#FFFFFF', bg: '#000000' };
+        }
+        if (units < 10) {
+            return { label: 'LOW', class: 'status-urgent', emoji: '🟡', color: '#FFFFFF', bg: '#000000' };
+        }
+        if (units < 30) {
+            return { label: 'MODERATE', class: 'status-moderate', emoji: '🟢', color: '#FFFFFF', bg: '#000000' };
+        }
+        return { label: 'GOOD', class: 'status-good', emoji: '✅', color: '#FFFFFF', bg: '#000000' };
+    }
+
+    /**
+     * Render hospital requests
+     */
+    function renderHospitalRequests() {
+        const activeRequests = hospitalRequests.filter(r => r.status === 'pending' || r.status === 'accepted').length;
+        const requestsEl = document.getElementById('hospitalActiveRequests') || document.querySelector('[data-stat="requests"] .stat-value');
+        if (requestsEl) requestsEl.textContent = activeRequests.toLocaleString();
+
+        const pendingActions = hospitalRequests.filter(r => r.status === 'pending').length;
+        const pendingEl = document.getElementById('hospitalPendingActions') || document.querySelector('[data-stat="pending"] .stat-value');
+        if (pendingEl) pendingEl.textContent = pendingActions.toLocaleString();
+    }
+
+    /**
+     * Render hospital referrals
+     */
+    function renderHospitalReferrals() {
+        const totalReferrals = hospitalReferrals.length;
+        const referralsEl = document.getElementById('hospitalTotalReferrals') || document.querySelector('[data-stat="referrals"] .stat-value');
+        if (referralsEl) referralsEl.textContent = totalReferrals.toLocaleString();
+    }
+
+    /**
+     * Update hospital stats
+     */
+    function updateHospitalStats() {
+        renderHospitalInventory();
+        renderHospitalRequests();
+        renderHospitalReferrals();
+    }
+
+    /**
+     * Setup event listeners
+     */
+    function setupHospitalEventListeners() {
+        // Update inventory button
+        const updateBtn = document.getElementById('updateInventoryBtn');
+        if (updateBtn) {
+            updateBtn.addEventListener('click', openInventoryModal);
+        }
+
+        // Refresh inventory button
+        const refreshInvBtn = document.getElementById('refreshInventoryBtn');
+        if (refreshInvBtn) {
+            refreshInvBtn.addEventListener('click', () => {
+                window.initializePage();
+                window.utils.showNotification('Refreshing inventory...', 'info');
+            });
+        }
+
+        // Close inventory modal
+        const closeBtn = document.getElementById('closeInventoryModal');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeInventoryModal);
+        }
+
+        // Cancel inventory modal
+        const cancelBtn = document.getElementById('cancelInventoryModal');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', closeInventoryModal);
+        }
+
+        // Inventory form submit
+        const inventoryForm = document.getElementById('hospitalInventoryForm');
+        if (inventoryForm) {
+            inventoryForm.addEventListener('submit', handleInventoryUpdate);
+        }
+    }
+
+    /**
+     * Open inventory modal
+     */
+    function openInventoryModal() {
+        const modal = document.getElementById('hospitalInventoryModal');
+        if (!modal) return;
+
+        // Pre-fill with current inventory
+        const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+        bloodTypes.forEach(type => {
+            const input = document.getElementById(`inv_${type}`);
+            if (input) {
+                input.value = hospitalInventory[type]?.units || 0;
+            }
+        });
+
+        modal.classList.add('show');
+    }
+
+    /**
+     * Close inventory modal
+     */
+    function closeInventoryModal() {
+        const modal = document.getElementById('hospitalInventoryModal');
+        if (modal) {
+            modal.classList.remove('show');
+        }
+    }
+
+    /**
+     * Handle inventory update
+     * @param {Event} e - Submit event
+     */
+    async function handleInventoryUpdate(e) {
+        e.preventDefault();
+
+        if (!currentHospital) {
+            console.warn('Inventory update requested but hospital data not loaded');
+            return;
+        }
+
+        const emailKey = currentHospital.email.replace(/\./g, ',');
+        const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+        const updates = [];
+
+        try {
+            // Prepare batch update for Firestore
+            const batch = firestore.batch();
+            const rtdbUpdates = {};
+            const timestamp = new Date().toISOString();
+
+            bloodTypes.forEach(type => {
+                const input = document.getElementById(`inv_${type}`);
+                const units = parseInt(input?.value || '0');
+
+                if (units >= 0) {
+                    // Update Firestore
+                    const ref = firestore.collection('hospitals').doc(emailKey)
+                        .collection('inventory').doc(type);
+
+                    batch.set(ref, {
+                        units: units,
+                        lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedBy: currentHospital.email
+                    }, { merge: true });
+
+                    // Prepare RTDB update
+                    rtdbUpdates[`${type}/units`] = units;
+                    rtdbUpdates[`${type}/lastUpdated`] = timestamp;
+                }
+            });
+
+            // 1. Commit Firestore updates
+            await batch.commit();
+
+            // 2. Sync to Realtime Database for Super Admin & Mobile App visibility
+            if (window.database && currentBankId) {
+                try {
+                    await database.ref(`bloodBanks/${currentBankId}/inventory`).update(rtdbUpdates);
+                    await database.ref(`bloodBanks/${currentBankId}`).update({
+                        updatedAt: timestamp
+                    });
+                    console.log('RTDB Inventory synced for bank:', currentBankId);
+                } catch (rtdbError) {
+                    console.error('RTDB Sync failed:', rtdbError);
+                }
+            } else if (!currentBankId) {
+                console.warn('Could not find matching bank in RTDB to sync inventory (currentBankId is null)');
+            }
+
+            // Log audit event
+            if (window.auditLogs) {
+                await window.auditLogs.actions.updateInventory(emailKey, {
+                    hospitalName: currentHospital.name,
+                    bloodTypes: bloodTypes.length,
+                    updatedBy: currentHospital.email
+                });
+            }
+
+            window.utils.showNotification('Inventory updated successfully in all systems.', 'success');
+            closeInventoryModal();
+
+        } catch (error) {
+            console.error('Inventory update error:', error);
+            window.utils.showNotification('Failed to update inventory: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * Render recent activity from real Firestore data (last 30 days)
+     */
+    async function renderRecentActivity() {
+        const container = document.getElementById('hospitalRecentActivity');
+        if (!container) return;
+
+        container.innerHTML = `<div class="loading-state"><div class="loading-spinner"></div><p>Loading activity...</p></div>`;
+
+        try {
+            const activities = [];
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            const cutoff = firebase.firestore.Timestamp.fromDate(thirtyDaysAgo);
+
+            if (!currentHospital || !currentHospital.email) {
+                container.innerHTML = `<div class="empty-state"><p>No hospital context available</p></div>`;
+                return;
+            }
+
+            // Parallel fetch for better performance
+            const [reqSnap, refSnap] = await Promise.all([
+                firestore.collection('bloodRequests')
+                    .where('hospitalEmail', '==', currentHospital.email)
+                    .orderBy('createdAt', 'desc')
+                    .limit(10)
+                    .get(),
+                firestore.collection('referrals')
+                    .where('sourceHospital', '==', currentHospital.email)
+                    .orderBy('createdAt', 'desc')
+                    .limit(10)
+                    .get()
+            ]);
+
+            // Process Requests
+            reqSnap.forEach(doc => {
+                const d = doc.data();
+                const ts = d.createdAt?.toDate?.() || (d.createdAt ? new Date(d.createdAt) : null);
+                if (ts) {
+                    activities.push({
+                        type: 'request',
+                        icon: '📋',
+                        title: `Blood Request — ${d.bloodType || 'Unknown Type'}`,
+                        detail: `Status: ${(d.status || 'pending').charAt(0).toUpperCase() + (d.status || 'pending').slice(1)} · ${d.unitsNeeded || 1} unit(s)`,
+                        timestamp: ts,
+                        statusClass: d.status === 'completed' ? 'activity-success' : d.status === 'pending' ? 'activity-warning' : 'activity-info'
+                    });
+                }
+            });
+
+            // Process Referrals
+            refSnap.forEach(doc => {
+                const d = doc.data();
+                const ts = d.createdAt?.toDate?.() || (d.createdAt ? new Date(d.createdAt) : null);
+                if (ts) {
+                    activities.push({
+                        type: 'referral',
+                        icon: '🔗',
+                        title: `Patient Referral — ${d.patientName || 'Unknown'}`,
+                        detail: `To: ${d.targetHospitalName || d.targetHospital || 'Another facility'} · ${(d.status || 'pending').charAt(0).toUpperCase() + (d.status || 'pending').slice(1)}`,
+                        timestamp: ts,
+                        statusClass: d.status === 'accepted' ? 'activity-success' : 'activity-info'
+                    });
+                }
+            });
+
+            // 3. Inventory updates from hospitalRequests (if any)
+            if (hospitalInventory && Object.keys(hospitalInventory).length > 0) {
+                const lastUpdated = Object.values(hospitalInventory)
+                    .map(inv => inv.lastUpdated)
+                    .filter(Boolean)
+                    .sort()
+                    .pop();
+                if (lastUpdated) {
+                    const ts = lastUpdated.toDate ? lastUpdated.toDate() : new Date(lastUpdated);
+                    activities.push({
+                        type: 'inventory',
+                        icon: '🩸',
+                        title: 'Inventory Updated',
+                        detail: `${Object.keys(hospitalInventory).length} blood types in stock`,
+                        timestamp: ts,
+                        statusClass: 'activity-success'
+                    });
+                }
+            }
+
+            // Sort by date (newest first) and limit
+            activities.sort((a, b) => b.timestamp - a.timestamp);
+            const recent = activities.slice(0, 8);
+
+            if (recent.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <p>No recent activity</p>
+                        <p style="font-size: 12px; margin-top: 8px;">Post blood requests or send referrals to see activity here</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = recent.map(a => {
+                const timeStr = a.timestamp.toLocaleString('en-KE', {
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+                return `
+                    <div class="activity-entry ${a.statusClass}" style="display: flex; gap: 14px; align-items: flex-start; padding: 14px 16px; margin-bottom: 6px; border-radius: 12px; background: var(--bg-secondary, #f8fafc); border: 1px solid var(--border-color, #e2e8f0);">
+                        <div style="font-size: 22px; flex-shrink: 0; margin-top: 2px;">${a.icon}</div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 700; font-size: 13px; color: var(--text-primary, #1a1a2e);">${a.title}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary, #64748b); margin-top: 3px;">${a.detail}</div>
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-tertiary, #94a3b8); white-space: nowrap; flex-shrink: 0;">${timeStr}</div>
+                    </div>
+                `;
+            }).join('');
+
+        } catch (error) {
+            console.error('Error loading recent activity:', error);
+            container.innerHTML = `
+                <div class="empty-state">
+                    <p style="color: var(--danger);">Failed to load recent activity</p>
+                </div>
+            `;
+        }
+    }
+
+    // Expose functions globally
+    window.hospitalAdmin = {
+        updateInventory: handleInventoryUpdate,
+        refreshData: loadHospitalData,
+        renderRecentActivity: renderRecentActivity
+    };
+
+    // Core initialization is now handled by hospital/base.html calling initializePage()
+
+})();

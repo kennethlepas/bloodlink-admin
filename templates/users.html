@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block body_class %}notification-theme-view{% endblock %}
+
+{% block title %}User Management - BloodLink Admin{% endblock %}
+{% block page_title %}User Registry{% endblock %}
+{% block page_subtitle %}View and manage all registered donors and requesters across the platform{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div class="card-header">
+        <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-box" id="usersSearch"
+                placeholder="Search users by name, email, or role...">
+        </div>
+        <div class="filter-group">
+            <select class="filter-select" id="userTypeFilter">
+                <option value="all">All Roles</option>
+                <option value="donor">Donors</option>
+                <option value="requester">Requesters</option>
+                <option value="hospital">Hospital Admins</option>
+                <option value="super_admin">Super Admins</option>
+            </select>
+            <select class="filter-select" id="userStatusFilter">
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Revoked</option>
+            </select>
+            <button class="btn btn-primary" id="addAdminBtn"
+                style="display: flex; align-items: center; gap: 8px; padding: 8px 16px;">
+                <span>➕</span>
+                <span>Add Admin</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>User Details</th>
+                    <th>Contact Info</th>
+                    <th>Role</th>
+                    <th>Blood Type</th>
+                    <th>Joined</th>
+                    <th>Verification</th>
+                    <th>Account</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="usersTableBody">
+                <tr>
+                    <td colspan="7" class="empty-state">
+                        <div class="empty-state-icon">👥</div>
+                        <p>Loading users...</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" id="deleteModal" style="display: none;">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+        <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+        <h2 style="margin-bottom: 12px; color: #1E293B;">Delete Entire User?</h2>
+        <p style="color: #64748B; margin-bottom: 24px; line-height: 1.5;">
+            Are you sure you want to delete <strong id="deleteUserName">this user</strong>?<br>
+            All records in <strong>users, donors, requesters, requests, and notifications</strong> will be permanently
+            removed.
+        </p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <button class="btn btn-secondary" onclick="window.closeDeleteModal()">Cancel</button>
+            <button class="btn btn-danger" id="confirmDeleteBtn">Delete Permanently</button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Admin Modal -->
+<div class="modal-overlay" id="addAdminModal" style="display: none;">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header"
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--gray-100); padding-bottom: 15px;">
+            <h2 style="color: var(--text-primary); font-size: 20px;">Add New Administrator</h2>
+            <button class="btn-icon" onclick="window.closeAddAdminModal()" style="font-size: 24px;">×</button>
+        </div>
+        <form id="addAdminForm">
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label
+                    style="display: block; font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Full
+                    Name</label>
+                <input type="text" id="adminName" placeholder="e.g. John Doe" required
+                    style="width: 100%; padding: 10px; border: 1px solid var(--gray-200); border-radius: 8px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label
+                    style="display: block; font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Email
+                    Address</label>
+                <input type="email" id="adminEmail" placeholder="e.g. admin@bloodlink.co.ke" required
+                    style="width: 100%; padding: 10px; border: 1px solid var(--gray-200); border-radius: 8px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label
+                    style="display: block; font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Password</label>
+                <input type="password" id="adminPassword" placeholder="Minimum 8 characters" required minlength="8"
+                    style="width: 100%; padding: 10px; border: 1px solid var(--gray-200); border-radius: 8px;">
+                <small style="color: var(--text-tertiary); font-size: 11px; margin-top: 4px; display: block;">Temporary
+                    password for the new administrator.</small>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px;">
+                <button type="button" class="btn btn-secondary" onclick="window.closeAddAdminModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="btnSubmitAdmin">Create Account</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='users.js') }}"></script>
+{% endblock %}

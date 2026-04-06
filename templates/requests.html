@@ -1,8 +1,24 @@
 {% extends "base.html" %}
 
+{% block body_class %}notification-theme-view{% endblock %}
+
 {% block title %}Blood Requests - BloodLink Admin{% endblock %}
 {% block page_title %}Blood Requests{% endblock %}
-{% block page_subtitle %}Manage and monitor blood requests{% endblock %}
+{% block page_subtitle %}Monitor and manage all blood donation and transfusion requests across the platform{% endblock
+%}
+
+{% block header_actions %}
+<div class="header-actions">
+    <button class="btn-primary" id="exportRequestsBtn" onclick="exportRequestsData()">
+        <span>📊</span>
+        <span>Export Report</span>
+    </button>
+    <button class="btn-secondary" id="refreshRequestsBtn" onclick="refreshRequests()">
+        <span>🔄</span>
+        <span>Refresh</span>
+    </button>
+</div>
+{% endblock %}
 
 {% block content %}
 <div class="content-card">
@@ -10,15 +26,17 @@
         <div class="search-wrapper">
             <span class="search-icon">🔍</span>
             <input type="text" class="search-box" id="requestsSearch"
-                placeholder="Search requests by name, blood type, or hospital...">
+                placeholder="Search by requester, patient, hospital, or blood type...">
         </div>
         <div class="filter-group">
             <select class="filter-select" id="requestStatusFilter">
                 <option value="all">All Requests</option>
-                <option value="pending">Pending</option>
+                <option value="pending">Pending Verification</option>
                 <option value="approved">Approved</option>
+                <option value="accepted">Accepted</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
+                <option value="rejected">Rejected</option>
             </select>
             <select class="filter-select" id="requestBloodTypeFilter">
                 <option value="all">All Blood Types</option>
@@ -33,10 +51,49 @@
             </select>
             <select class="filter-select" id="urgencyFilter">
                 <option value="all">All Urgencies</option>
-                <option value="critical">Critical</option>
-                <option value="urgent">Urgent</option>
-                <option value="normal">Normal</option>
+                <option value="critical">🚨 Critical</option>
+                <option value="urgent">⚠️ Urgent</option>
+                <option value="moderate">ℹ️ Moderate</option>
             </select>
+        </div>
+    </div>
+
+    <!-- Statistics Summary Cards -->
+    <div class="stats-grid" id="requestStats">
+        <div class="stat-card stat-primary">
+            <div class="stat-icon">🩸</div>
+            <div class="stat-details">
+                <div class="stat-label">Total Requests</div>
+                <div class="stat-value" id="totalRequests">0</div>
+            </div>
+        </div>
+        <div class="stat-card stat-warning">
+            <div class="stat-icon">⏳</div>
+            <div class="stat-details">
+                <div class="stat-label">Pending</div>
+                <div class="stat-value" id="pendingRequests">0</div>
+            </div>
+        </div>
+        <div class="stat-card stat-success">
+            <div class="stat-icon">✅</div>
+            <div class="stat-details">
+                <div class="stat-label">Approved</div>
+                <div class="stat-value" id="approvedRequests">0</div>
+            </div>
+        </div>
+        <div class="stat-card stat-info">
+            <div class="stat-icon">🎯</div>
+            <div class="stat-details">
+                <div class="stat-label">Accepted</div>
+                <div class="stat-value" id="acceptedRequests">0</div>
+            </div>
+        </div>
+        <div class="stat-card stat-accent">
+            <div class="stat-icon">🎉</div>
+            <div class="stat-details">
+                <div class="stat-label">Completed</div>
+                <div class="stat-value" id="completedRequests">0</div>
+            </div>
         </div>
     </div>
 
@@ -44,22 +101,22 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Requester</th>
-                    <th>Patient</th>
-                    <th>Blood Type</th>
-                    <th>Units</th>
-                    <th>Hospital</th>
-                    <th>Urgency</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+                    <th style="width: 12%">Request ID</th>
+                    <th style="width: 20%">Requester / Patient</th>
+                    <th style="width: 10%">Blood Type</th>
+                    <th style="width: 8%">Units</th>
+                    <th style="width: 15%">Hospital</th>
+                    <th style="width: 10%">Urgency</th>
+                    <th style="width: 10%">Date</th>
+                    <th style="width: 10%">Status</th>
+                    <th style="width: 5%">Actions</th>
                 </tr>
             </thead>
             <tbody id="requestsTableBody">
                 <tr>
                     <td colspan="9" class="empty-state">
                         <div class="empty-state-icon">🩸</div>
-                        <p>No blood requests found</p>
+                        <p>Loading blood requests...</p>
                     </td>
                 </tr>
             </tbody>
@@ -68,17 +125,43 @@
 </div>
 
 <!-- Request Details Modal -->
-<div id="requestDetailsModal" class="modal">
+<div id="requestDetailsModal" class="modal-overlay">
     <div class="modal-content modal-large">
         <div class="modal-header">
-            <h2>Request Details</h2>
-            <button class="close-btn" id="closeRequestModal">&times;</button>
+            <div>
+                <h2>Blood Request Details</h2>
+                <p class="modal-subtitle" id="requestModalSubtitle">View and manage request</p>
+            </div>
+            <button class="modal-close" id="closeRequestModal">✕</button>
         </div>
-        <div class="modal-body" id="requestDetailsContent">
-            <!-- Content will be populated dynamically -->
+
+        <div id="requestDetailsContent" style="max-height: 60vh; overflow-y: auto;"></div>
+
+        <div class="modal-actions" id="requestModalActions">
+            <!-- Dynamic action buttons will be inserted here -->
         </div>
-        <div class="modal-footer" id="requestActions">
-            <!-- Action buttons will be populated dynamically -->
+    </div>
+</div>
+
+<!-- Rejection Reason Modal -->
+<div id="rejectRequestModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Reject Blood Request</h2>
+            <button class="modal-close" id="closeRejectModal">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Rejection Reason *</label>
+                <textarea id="rejectionReason" rows="4"
+                    placeholder="Please provide a reason for rejecting this request..."
+                    style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(0,0,0,0.2); color:white;"></textarea>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-secondary" id="cancelRejectBtn">Cancel</button>
+            <button class="btn-primary" id="confirmRejectBtn" style="background: var(--danger-color, #ef4444);">Confirm
+                Rejection</button>
         </div>
     </div>
 </div>

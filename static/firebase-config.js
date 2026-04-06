@@ -18,7 +18,24 @@ const auth = firebase.auth();
 const database = firebase.database();
 const firestore = firebase.firestore();
 
+// Enable Offline Persistence with modern settings if supported
+// Note: enablePersistence() is deprecated in newer v9+ versions in favor of FirestoreSettings.cache
+// but remains the standard for the compat layer.
+try {
+  firestore.enablePersistence({ synchronizeTabs: true })
+    .catch((err) => {
+      if (err.code == 'failed-precondition') {
+        console.warn('Firestore Persistence failed: Multiple tabs open');
+      } else if (err.code == 'unimplemented') {
+        console.warn('Firestore Persistence is not available in this browser');
+      }
+    });
+} catch (e) {
+  console.warn('Could not initialize Firestore persistence:', e);
+}
+
 // Export for use in other modules
+window.firebaseConfig = firebaseConfig;
 window.firebaseApp = firebase;
 window.auth = auth;
 window.database = database;

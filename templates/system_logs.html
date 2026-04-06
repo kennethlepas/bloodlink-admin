@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+
+{% block body_class %}notification-theme-view{% endblock %}
+
+{% block title %}System Logs - BloodLink{% endblock %}
+{% block page_title %}System Logs{% endblock %}
+{% block page_subtitle %}Monitor admin actions and user app activities{% endblock %}
+
+{% block header_actions %}
+<button class="btn-secondary btn-small" onclick="exportLogs()" style="background: white; color: var(--primary);">
+    📤 Export Logs
+</button>
+{% endblock %}
+
+{% block content %}
+<!-- Log Type Tabs -->
+<div
+    style="display: flex; gap: 12px; margin-bottom: 24px; border-bottom: 2px solid var(--gray-200); padding-bottom: 16px;">
+    <button id="tabSystem" class="btn-primary" onclick="switchTab('system')" style="flex: 1; max-width: 200px;">
+        📊 Combined Logs
+    </button>
+    <button id="tabAdmin" class="btn-secondary" onclick="switchTab('admin')" style="flex: 1; max-width: 200px;">
+        👨‍💼 Admin Only
+    </button>
+    <button id="tabUser" class="btn-secondary" onclick="switchTab('user')" style="flex: 1; max-width: 200px;">
+        📱 User App Only
+    </button>
+</div>
+
+<!-- Statistics Cards -->
+<div class="stats-grid" style="margin-bottom: 32px;">
+    <div class="stat-card stat-primary">
+        <div class="stat-icon">📊</div>
+        <div class="stat-details">
+            <div class="stat-label">Total Logs (24h)</div>
+            <div class="stat-value" id="totalLogs24h">0</div>
+            <div class="stat-change">All activities</div>
+        </div>
+    </div>
+
+    <div class="stat-card stat-info">
+        <div class="stat-icon">👨‍💼</div>
+        <div class="stat-details">
+            <div class="stat-label">Admin Actions</div>
+            <div class="stat-value" id="adminActionsCount">0</div>
+            <div class="stat-change">Last 24 hours</div>
+        </div>
+    </div>
+
+    <div class="stat-card stat-success">
+        <div class="stat-icon">📱</div>
+        <div class="stat-details">
+            <div class="stat-label">User Activities</div>
+            <div class="stat-value" id="userActivitiesCount">0</div>
+            <div class="stat-change">Last 24 hours</div>
+        </div>
+    </div>
+
+    <div class="stat-card stat-warning">
+        <div class="stat-icon">⚠️</div>
+        <div class="stat-details">
+            <div class="stat-label">Errors/Warnings</div>
+            <div class="stat-value" id="errorsCount">0</div>
+            <div class="stat-change">Requires attention</div>
+        </div>
+    </div>
+</div>
+
+<!-- Activity Type Distribution -->
+<div class="content-card" style="margin-bottom: 32px;">
+    <div class="card-header">
+        <h2 class="card-title">Activity Distribution</h2>
+        <p class="card-subtitle">Breakdown of user activities by type</p>
+    </div>
+    <div id="activityDistribution" style="padding: 20px;">
+        <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Loading distribution...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Main Logs Container -->
+<div id="systemLogsContainer">
+    <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>Loading system logs...</p>
+    </div>
+</div>
+
+<!-- Real-time Updates Toggle -->
+<div
+    style="margin-top: 24px; padding: 16px; background: var(--gray-50); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <div style="font-weight: 600; color: var(--text-primary);">🔴 Real-time Updates</div>
+        <div style="font-size: 12px; color: var(--text-secondary);">Automatically refresh logs every 30 seconds</div>
+    </div>
+    <label class="toggle-switch">
+        <input type="checkbox" id="realtimeToggle" checked onchange="toggleRealtimeUpdates()">
+        <span class="toggle-slider"></span>
+    </label>
+</div>
+
+<style>
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--gray-300);
+        transition: .4s;
+        border-radius: 24px;
+    }
+
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+
+    input:checked+.toggle-slider {
+        background-color: var(--primary);
+    }
+
+    input:checked+.toggle-slider:before {
+        transform: translateX(26px);
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentTab = 'system';
+    let realtimeInterval = null;
+    let allLogs = [];
+
+    document.addEventListener('DOMContentLoaded', async function () {
+        await initializeSystemLogs();
+    });
+
+    async function initializeSystemLogs() {
+        // Load system logs (combined)
+        await loadSystemLogs();
+
+        // Load statistics
+        await loadLogStatistics();
+
+        // Start real-time updates
+        startRealtimeUpdates();
+    }
+
+    async function loadSystemLogs() {
+        if (!window.auditLogs) return;
+
+        const container = document.getElementById('systemLogsContainer');
+        if (!container) return;
+
+        try {
+            let logs;
+            if (currentTab === 'system') {
+                logs = await window.auditLogs.getCombinedLogs();
+            } else if (currentTab === 'admin') {
+                logs = await window.auditLogs.get();
+            } else {
+                logs = await window.auditLogs.getUserActivityLogs();
+            }
+
+            allLogs = logs;
+            window.auditLogs.render('systemLogsContainer', logs);
+
+        } catch (error) {
+            console.error('Error loading system logs:', error);
+            if (container) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <p>Failed to load system logs</p>
+                        <p style="font-size: 12px; margin-top: 8px;">${error.message}</p>
+                        <button class="btn-primary" onclick="loadSystemLogs()" style="margin-top: 16px;">Retry</button>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    async function loadLogStatistics() {
+        try {
+            const now = new Date();
+            const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+
+            // Get all logs for statistics
+            const allLogs = await window.auditLogs.getCombinedLogs();
+
+            // Filter logs from last 24 hours
+            const recentLogs = allLogs.filter(log => {
+                const logTime = new Date(log.timestampISO || 0);
+                return logTime >= twentyFourHoursAgo;
+            });
+
+            // Count by type
+            const adminLogs = recentLogs.filter(log => log.logSource === 'admin');
+            const userLogs = recentLogs.filter(log => log.logSource === 'user_app');
+            const errors = recentLogs.filter(log =>
+                log.severity === 'error' ||
+                log.severity === 'critical' ||
+                log.action === 'warning'
+            );
+
+            // Update stats
+            document.getElementById('totalLogs24h').textContent = recentLogs.length;
+            document.getElementById('adminActionsCount').textContent = adminLogs.length;
+            document.getElementById('userActivitiesCount').textContent = userLogs.length;
+            document.getElementById('errorsCount').textContent = errors.length;
+
+            // Load activity distribution
+            loadActivityDistribution(userLogs);
+
+        } catch (error) {
+            console.error('Error loading statistics:', error);
+        }
+    }
+
+    function loadActivityDistribution(userLogs) {
+        const container = document.getElementById('activityDistribution');
+        if (!container) return;
+
+        // Count by activity type
+        const activityCounts = {};
+        userLogs.forEach(log => {
+            const type = log.activityType || 'unknown';
+            activityCounts[type] = (activityCounts[type] || 0) + 1;
+        });
+
+        // Sort by count
+        const sorted = Object.entries(activityCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10); // Top 10
+
+        if (sorted.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <p>No user activity data available</p>
+                </div>
+            `;
+            return;
+        }
+
+        const total = sorted.reduce((sum, [_, count]) => sum + count, 0);
+
+        container.innerHTML = `
+            <div style="display: grid; gap: 12px;">
+                ${sorted.map(([type, count]) => {
+            const percentage = Math.round((count / total) * 100);
+            return `
+                        <div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span style="font-size: 13px; font-weight: 600;">${formatActivityType(type)}</span>
+                                <span style="font-size: 13px; color: var(--text-secondary);">${count} (${percentage}%)</span>
+                            </div>
+                            <div style="height: 8px; background: var(--gray-200); border-radius: 4px; overflow: hidden;">
+                                <div style="width: ${percentage}%; height: 100%; background: var(--primary); border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                    `;
+        }).join('')}
+            </div>
+        `;
+    }
+
+    function formatActivityType(type) {
+        const mapping = {
+            'auth_login': '🔐 User Login',
+            'auth_logout': '🚪 User Logout',
+            'request_create': '🩸 Blood Request',
+            'donor_register': '👤 Donor Registration',
+            'donor_accept_request': '✅ Request Accepted',
+            'search_donors': '🔍 Search Donors',
+            'search_blood_banks': '🏥 Search Blood Banks',
+            'app_open': '📱 App Open',
+            'error_occurred': '❌ Error',
+            'profile_update': '👤 Profile Update'
+        };
+        return mapping[type] || type;
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+
+        // Update button styles
+        ['system', 'admin', 'user'].forEach(t => {
+            const btn = document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+            if (t === tab) {
+                btn.className = 'btn-primary';
+            } else {
+                btn.className = 'btn-secondary';
+            }
+        });
+
+        // Reload logs
+        loadSystemLogs();
+    }
+
+    function toggleRealtimeUpdates() {
+        const toggle = document.getElementById('realtimeToggle');
+        if (toggle.checked) {
+            startRealtimeUpdates();
+        } else {
+            stopRealtimeUpdates();
+        }
+    }
+
+    function startRealtimeUpdates() {
+        // Load new logs every 30 seconds
+        realtimeInterval = setInterval(async () => {
+            await loadSystemLogs();
+            await loadLogStatistics();
+        }, 30000);
+    }
+
+    function stopRealtimeUpdates() {
+        if (realtimeInterval) {
+            clearInterval(realtimeInterval);
+            realtimeInterval = null;
+        }
+    }
+
+    async function exportLogs() {
+        if (!allLogs || allLogs.length === 0) {
+            window.utils.showNotification('No logs to export', 'warning');
+            return;
+        }
+
+        try {
+            // Convert to CSV
+            const csv = convertLogsToCSV(allLogs);
+
+            // Download
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `system-logs-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            // Log audit event
+            if (window.auditLogs) {
+                await window.auditLogs.actions.exportData('system_logs', {
+                    count: allLogs.length,
+                    format: 'csv'
+                });
+            }
+
+            window.utils.showNotification('Logs exported successfully!', 'success');
+
+        } catch (error) {
+            console.error('Export error:', error);
+            window.utils.showNotification('Failed to export logs: ' + error.message, 'error');
+        }
+    }
+
+    function convertLogsToCSV(logs) {
+        const headers = ['Timestamp', 'Type', 'Source', 'User/Admin', 'Action', 'Details', 'Severity'];
+
+        const rows = logs.map(log => {
+            const isUserLog = log.logSource === 'user_app';
+            return [
+                log.timestampISO || '',
+                isUserLog ? (log.activityType || '') : (log.action || ''),
+                isUserLog ? 'User App' : 'Admin',
+                isUserLog ? (log.user?.email || '') : (log.admin?.email || ''),
+                isUserLog ? 'User Activity' : (log.resourceType || ''),
+                JSON.stringify(isUserLog ? log.data : log.details).replace(/"/g, '""'),
+                log.severity || 'info'
+            ];
+        });
+
+        return [
+            headers.join(','),
+            ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+        ].join('\n');
+    }
+</script>
+{% endblock %}

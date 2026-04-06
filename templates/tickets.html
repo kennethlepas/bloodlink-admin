@@ -1,0 +1,482 @@
+{% extends "base.html" %}
+
+{% block title %}Support Tickets - BloodLink HQ{% endblock %}
+
+{% block extra_head %}
+<style>
+    :root {
+        --status-open: #3b82f6;
+        --status-under_review: #a855f7;
+        --status-awaiting_user: #f59e0b;
+        --status-resolved: #10b981;
+        --status-closed: #6b7280;
+
+        --priority-low: #10b981;
+        --priority-medium: #f59e0b;
+        --priority-high: #ef4444;
+        --priority-critical: #7f1d1d;
+    }
+
+    .ticket-view {
+        display: grid;
+        grid-template-columns: 350px 1fr;
+        gap: 20px;
+        height: calc(100vh - 160px);
+    }
+
+    /* Ticket List sidebar */
+    .ticket-sidebar {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid var(--gray-200);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .sidebar-search {
+        padding: 16px;
+        border-bottom: 1px solid var(--gray-200);
+    }
+
+    .ticket-list {
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .ticket-item {
+        padding: 16px;
+        border-bottom: 1px solid var(--gray-200);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .ticket-item:hover {
+        background: var(--gray-50);
+    }
+
+    .ticket-item.active {
+        background: var(--pale-blue);
+        border-left: 4px solid var(--primary);
+    }
+
+    .ticket-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 4px;
+    }
+
+    .ticket-id {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-family: monospace;
+    }
+
+    .ticket-subject {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 13px;
+        margin-bottom: 4px;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        line-clamp: 1;
+        -webkit-box-orient: vertical;
+
+        overflow: hidden;
+    }
+
+    .ticket-meta {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        font-size: 11px;
+    }
+
+    /* Ticket Detail Main */
+    .ticket-main {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid var(--gray-200);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .ticket-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--gray-200);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .header-info h2 {
+        font-size: 18px;
+        margin-bottom: 8px;
+    }
+
+    .header-badges {
+        display: flex;
+        gap: 10px;
+    }
+
+    .badge {
+        font-size: 11px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-status {
+        color: white;
+    }
+
+    .badge-status.open {
+        background: var(--status-open);
+    }
+
+    .badge-status.under_review {
+        background: var(--status-under_review);
+    }
+
+    .badge-status.awaiting_user {
+        background: var(--status-awaiting_user);
+    }
+
+    .badge-status.resolved {
+        background: var(--status-resolved);
+    }
+
+    .badge-status.closed {
+        background: var(--status-closed);
+    }
+
+    /* Conversation Area */
+    .ticket-body {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        overflow: hidden;
+    }
+
+    .conversation-area {
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid var(--gray-200);
+        overflow: hidden;
+    }
+
+    .messages-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        background: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .message {
+        max-width: 80%;
+        padding: 12px 16px;
+        border-radius: 12px;
+        font-size: 13px;
+        line-height: 1.5;
+        position: relative;
+    }
+
+    .message.user {
+        align-self: flex-start;
+        background: white;
+        border: 1px solid var(--gray-200);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .message.admin {
+        align-self: flex-end;
+        background: var(--primary);
+        color: white;
+    }
+
+    .message-info {
+        font-size: 10px;
+        margin-bottom: 4px;
+        opacity: 0.8;
+    }
+
+    /* Reply Tool */
+    .reply-area {
+        padding: 20px;
+        border-top: 1px solid var(--gray-200);
+        background: white;
+    }
+
+    .reply-box {
+        position: relative;
+    }
+
+    .reply-box textarea {
+        width: 100%;
+        border: 1px solid var(--gray-200);
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 13px;
+        resize: none;
+        height: 100px;
+    }
+
+    /* Metadata Panel */
+    .metadata-panel {
+        padding: 20px;
+        overflow-y: auto;
+        font-size: 13px;
+    }
+
+    .meta-section {
+        margin-bottom: 24px;
+    }
+
+    .meta-section h4 {
+        font-size: 12px;
+        text-transform: uppercase;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+        letter-spacing: 0.5px;
+    }
+
+    .meta-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+    }
+
+    .meta-label {
+        color: var(--text-secondary);
+    }
+
+    .meta-value {
+        font-weight: 500;
+        text-align: right;
+    }
+
+    .related-entity-card {
+        background: var(--gray-50);
+        border: 1px solid var(--gray-200);
+        border-radius: 8px;
+        padding: 12px;
+        margin-top: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}Support Tickets{% endblock %}
+{% block page_subtitle %}Manage user disputes, inquiries, and technical issues{% endblock %}
+
+{% block content %}
+<div class="ticket-view">
+    <!-- Sidebar -->
+    <div class="ticket-sidebar">
+        <div class="sidebar-search">
+            <button class="btn btn-primary" style="width: 100%; margin-bottom: 12px;" onclick="openNewTicketModal()">+
+                Create New Ticket</button>
+            <div class="search-input-wrapper">
+
+                <span class="search-icon">🔍</span>
+                <input type="text" id="ticketSearch" placeholder="Search tickets..." class="filter-input">
+            </div>
+            <div class="filter-row" style="margin-top: 12px; display: flex; gap: 8px;">
+                <select id="statusFilter" class="filter-select" style="flex: 1;">
+                    <option value="all">All Status</option>
+                    <option value="open">Open</option>
+                    <option value="under_review">Under Review</option>
+                    <option value="awaiting_user">Awaiting User</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="closed">Closed</option>
+                </select>
+            </div>
+        </div>
+        <div class="ticket-list" id="ticketList">
+            <!-- Populated by JS -->
+            <div class="loading-state" style="padding: 40px; text-align: center;">
+                <div class="loading-spinner"></div>
+                <p>Loading tickets...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Detail -->
+    <div class="ticket-main" id="ticketDetailView">
+        <div class="empty-state" style="margin: auto;">
+            <div class="empty-state-icon">🎫</div>
+            <h3>Select a ticket to view details</h3>
+            <p>Choose a ticket from the sidebar to manage the conversation and resolution.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Reusable Templates (Hidden) -->
+<template id="ticketDetailTemplate">
+    <div class="ticket-header">
+        <div class="header-info">
+            <h2 id="viewSubject">Subject Placeholder</h2>
+            <div class="header-badges">
+                <span id="viewStatus" class="badge badge-status">STATUS</span>
+                <span id="viewPriority" class="badge" style="background: #f1f5f9; color: #475569;">PRIORITY</span>
+                <span id="viewType" class="badge" style="background: #f1f5f9; color: #475569;">TYPE</span>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-outline" onclick="closeTicket(activeTicket.id)" id="closeTicketBtn">Close
+                Ticket</button>
+            <button class="btn btn-primary" onclick="assignToMe(activeTicket.id)" id="assignBtn">Assign to Me</button>
+        </div>
+    </div>
+
+    <div class="ticket-body">
+        <div class="conversation-area">
+            <div class="messages-list" id="messageList">
+                <!-- Messages populate here -->
+            </div>
+            <div class="reply-area">
+                <div class="reply-box">
+                    <textarea id="replyText" placeholder="Write your response..."></textarea>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                        <span class="text-secondary" style="font-size: 11px;">The user will be notified of your
+                            reply.</span>
+                        <div style="display: flex; gap: 10px;">
+                            <select id="updateStatusTo" class="filter-select" style="width: auto;">
+                                <option value="no_change">No status change</option>
+                                <option value="under_review">Set to Under Review</option>
+                                <option value="awaiting_user">Set to Awaiting User</option>
+                                <option value="resolved">Set to Resolved</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="handleReply()">Send Reply</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="metadata-panel">
+            <div class="meta-section">
+                <h4>User Information</h4>
+                <div class="meta-row">
+                    <span class="meta-label">Name</span>
+                    <span class="meta-value" id="viewUserName">-</span>
+                </div>
+                <div class="meta-row">
+                    <span class="meta-label">Email</span>
+                    <span class="meta-value" id="viewUserEmail">-</span>
+                </div>
+                <div class="meta-row">
+                    <span class="meta-label">Phone</span>
+                    <span class="meta-value" id="viewUserPhone">-</span>
+                </div>
+            </div>
+
+            <div class="meta-section" id="relatedEntitySection">
+                <h4>Related Entity</h4>
+                <div id="entityDetails" class="related-entity-card">
+                    <!-- Entity details here -->
+                </div>
+                <button class="btn btn-outline btn-sm" style="width: 100%; margin-top: 10px;" id="viewEntityBtn">View
+                    Related Record</button>
+            </div>
+
+            <div class="meta-section">
+                <h4>Audit Log</h4>
+                <div id="auditLog" style="font-size: 11px; color: var(--text-secondary);">
+                    <!-- Audit trail here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block modals %}
+<!-- New Ticket Modal -->
+<div id="newTicketModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3 class="modal-title">Create New Support Ticket</h3>
+            <button class="modal-close" onclick="closeNewTicketModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="newTicketForm">
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="ticketType" style="display: block; margin-bottom: 6px; font-weight: 600;">Ticket
+                        Type</label>
+                    <select id="ticketType" class="filter-select" style="width: 100%;" required
+                        onchange="toggleDisputeFields(this.value)">
+                        <option value="inquiry">General Inquiry</option>
+                        <option value="dispute">Donation Dispute</option>
+                        <option value="bug">Technical Issue/Bug</option>
+                        <option value="feature">Feature Request</option>
+                        <option value="account">Account Access</option>
+                    </select>
+                </div>
+                <div id="disputeFields" class="hidden"
+                    style="background: var(--gray-50); padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px dashed var(--gray-300);">
+                    <div class="form-group" style="margin-bottom: 8px;">
+                        <label style="font-size: 11px; font-weight: 600;">Related Entity ID</label>
+                        <input type="text" id="relatedEntityId" class="filter-input" style="width: 100%;"
+                            placeholder="e.g. Booking ID">
+                        <input type="hidden" id="relatedEntityType">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="ticketSubject"
+                        style="display: block; margin-bottom: 6px; font-weight: 600;">Subject</label>
+                    <input type="text" id="ticketSubject" class="filter-input" style="width: 100%;"
+                        placeholder="Summarize the issue..." required>
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="ticketPriority"
+                        style="display: block; margin-bottom: 6px; font-weight: 600;">Priority</label>
+                    <select id="ticketPriority" class="filter-select" style="width: 100%;">
+                        <option value="Low">Low</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="High">High</option>
+                        <option value="Critical">Critical</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="targetUser" style="display: block; margin-bottom: 6px; font-weight: 600;">User (Email or
+                        UID)</label>
+                    <input type="text" id="targetUser" class="filter-input" style="width: 100%;"
+                        placeholder="Enter user details..." required>
+                </div>
+                <div class="form-group">
+                    <label for="initialMsg" style="display: block; margin-bottom: 6px; font-weight: 600;">Initial
+                        Description / Note</label>
+                    <textarea id="initialMsg" class="filter-input" style="width: 100%; height: 100px; resize: none;"
+                        placeholder="Explain the context..." required></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer"
+            style="padding: 20px; border-top: 1px solid var(--gray-200); display: flex; justify-content: flex-end; gap: 12px;">
+            <button class="btn btn-outline" onclick="closeNewTicketModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="submitNewTicket()">Create Ticket</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='tickets.js') }}"></script>
+<script>
+    // Initialize the Support Ticket module
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.initializeTickets) {
+            window.initializeTickets();
+            // Export as initializePage for potential global loaders
+            window.initializePage = window.initializeTickets;
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,186 @@
+{% extends "hospital/base.html" %}
+
+{% block title %}Hospital Dashboard - BloodLink{% endblock %}
+{% block body_class %}notification-theme-view{% endblock %}
+{% block page_title %}Hospital Dashboard{% endblock %}
+{% block page_subtitle %}Overview of your facility's blood banking operations{% endblock %}
+
+{% block content %}
+<!-- Hospital Stats Grid -->
+<div class="stats-grid">
+    <div class="stat-card stat-primary" data-stat="requests">
+        <div class="stat-icon">📋</div>
+        <div class="stat-details">
+            <div class="stat-label">Active Requests</div>
+            <div class="stat-value" id="hospitalActiveRequests">0</div>
+            <div class="stat-change">From your facility</div>
+        </div>
+    </div>
+
+    <div class="stat-card stat-info" data-stat="referrals">
+        <div class="stat-icon">🔗</div>
+        <div class="stat-details">
+            <div class="stat-label">Total Referrals</div>
+            <div class="stat-value" id="hospitalTotalReferrals">0</div>
+            <div class="stat-change">Sent & received</div>
+        </div>
+    </div>
+
+    <div class="stat-card stat-success" data-stat="stock">
+        <div class="stat-icon">🩸</div>
+        <div class="stat-details">
+            <div class="stat-label">Blood Stock</div>
+            <div class="stat-value" id="hospitalBloodStock">0</div>
+            <div class="stat-change">Available units</div>
+        </div>
+    </div>
+
+    <div class="stat-card stat-warning" data-stat="pending">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-details">
+            <div class="stat-label">Pending Actions</div>
+            <div class="stat-value" id="hospitalPendingActions">0</div>
+            <div class="stat-change">Requires attention</div>
+        </div>
+    </div>
+</div>
+
+<!-- Internal Inventory Section -->
+<div class="content-card-availability"
+    style="margin-top: 32px; background: white; padding: 32px; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md);">
+    <div class="availability-header"
+        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <div>
+            <h2 class="card-title"
+                style="font-size: 22px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Your
+                Inventory Levels</h2>
+            <p class="card-subtitle" style="font-size: 14px; color: var(--text-secondary);">Real-time view of blood
+                units available in your bank</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <button class="btn-secondary btn-small" id="refreshInventoryBtn"
+                style="display: flex; align-items: center; gap: 8px;">
+                <span>🔄</span> Refresh
+            </button>
+            <button class="btn-primary btn-small" id="updateInventoryBtn"
+                style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 20px; font-weight: 600; cursor: pointer;">
+                Update Inventory
+            </button>
+        </div>
+    </div>
+    <div class="blood-type-grid" id="hospitalInventoryGrid">
+        <div class="loading-state"
+            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 16px; width: 100%;">
+            <div class="skeleton" style="height: 100px; border-radius: 12px;"></div>
+            <div class="skeleton" style="height: 100px; border-radius: 12px;"></div>
+            <div class="skeleton" style="height: 100px; border-radius: 12px;"></div>
+            <div class="skeleton" style="height: 100px; border-radius: 12px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions for Hospitals -->
+<div class="quick-actions-grid" style="margin-top: 40px;">
+    <a href="/hospital/requests" class="quick-action-card">
+        <span class="quick-action-icon">📋</span>
+        <h3>Blood Requests</h3>
+        <p>Post new requests or manage existing ones</p>
+    </a>
+
+    <a href="/hospital/referrals" class="quick-action-card">
+        <span class="quick-action-icon">🔗</span>
+        <h3>Referrals</h3>
+        <p>Refer patients to other hospitals for blood</p>
+    </a>
+
+    <a href="/hospital/chat" class="quick-action-card">
+        <span class="quick-action-icon">💬</span>
+        <h3>BloodLink Connect</h3>
+        <p>Chat with other hospital administrators</p>
+    </a>
+
+    <a href="/hospital/reports" class="quick-action-card">
+        <span class="quick-action-icon">📊</span>
+        <h3>Facility Reports</h3>
+        <p>View and export your hospital's activity reports</p>
+    </a>
+
+    <a href="/hospital/policies" class="quick-action-card">
+        <span class="quick-action-icon">🛡️</span>
+        <h3>Hospital Policies</h3>
+        <p>View guidelines and record compliance acknowledgment</p>
+    </a>
+</div>
+
+
+<!-- Recent Activity Section -->
+<div class="content-card" style="margin-top: 32px;">
+    <div class="card-header">
+        <h2 class="card-title">Recent Facility Activity</h2>
+        <p class="card-subtitle">Latest actions and updates from your hospital</p>
+    </div>
+    <div id="hospitalRecentActivity">
+        <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Loading recent activity...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<!-- Update Inventory Modal -->
+<div id="hospitalInventoryModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Update Blood Inventory</h2>
+            <button class="modal-close" id="closeInventoryModal">✕</button>
+        </div>
+        <form id="hospitalInventoryForm">
+            <div class="inventory-update-grid"
+                style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px;">
+                <div class="form-group">
+                    <label>A+ Units</label>
+                    <input type="number" name="A+" min="0" value="0" id="inv_A+">
+                </div>
+                <div class="form-group">
+                    <label>A- Units</label>
+                    <input type="number" name="A-" min="0" value="0" id="inv_A-">
+                </div>
+                <div class="form-group">
+                    <label>B+ Units</label>
+                    <input type="number" name="B+" min="0" value="0" id="inv_B+">
+                </div>
+                <div class="form-group">
+                    <label>B- Units</label>
+                    <input type="number" name="B-" min="0" value="0" id="inv_B-">
+                </div>
+                <div class="form-group">
+                    <label>AB+ Units</label>
+                    <input type="number" name="AB+" min="0" value="0" id="inv_AB+">
+                </div>
+                <div class="form-group">
+                    <label>AB- Units</label>
+                    <input type="number" name="AB-" min="0" value="0" id="inv_AB-">
+                </div>
+                <div class="form-group">
+                    <label>O+ Units</label>
+                    <input type="number" name="O+" min="0" value="0" id="inv_O+">
+                </div>
+                <div class="form-group">
+                    <label>O- Units</label>
+                    <input type="number" name="O-" min="0" value="0" id="inv_O-">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="btn-primary">Save Changes</button>
+                <button type="button" class="btn-secondary" id="cancelInventoryModal">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='hospital/hospital-admin.js') }}"></script>
+{% endblock %}

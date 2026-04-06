@@ -1,5 +1,17 @@
 {% extends "base.html" %}
 
+{% block body_class %}notification-theme-view{% endblock %}
+{% block extra_head %}
+<style>
+    #donorDetailModal {
+        display: none !important;
+    }
+
+    #donorDetailModal.show {
+        display: flex !important;
+    }
+</style>
+{% endblock %}
 {% block title %}Donors - BloodLink Admin{% endblock %}
 {% block page_title %}Donors{% endblock %}
 {% block page_subtitle %}Manage and verify registered donors{% endblock %}
@@ -17,6 +29,7 @@
                 <option value="all">All Donors</option>
                 <option value="verified">Verified</option>
                 <option value="pending">Pending</option>
+                <option value="rejected">Rejected</option>
             </select>
             <select class="filter-select" id="bloodTypeFilter">
                 <option value="all">All Blood Types</option>
@@ -29,11 +42,25 @@
                 <option value="O+">O+</option>
                 <option value="O-">O-</option>
             </select>
+            <select class="filter-select" id="availabilityFilter">
+                <option value="all">All Availability</option>
+                <option value="available">Available</option>
+                <option value="unavailable">Unavailable</option>
+            </select>
         </div>
     </div>
 
     <div class="table-container">
         <table class="data-table">
+            <colgroup>
+                <col style="width: 20%">
+                <col style="width: 20%">
+                <col style="width: 10%">
+                <col style="width: 8%">
+                <col style="width: 12%">
+                <col style="width: 15%">
+                <col style="width: 15%">
+            </colgroup>
             <thead>
                 <tr>
                     <th>Donor Name</th>
@@ -54,6 +81,27 @@
                 </tr>
             </tbody>
         </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<!-- Donor Details Modal -->
+<div id="donorDetailModal" class="modal-overlay">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <div>
+                <h2>Donor Details</h2>
+                <p class="modal-subtitle" id="donorModalSubtitle"></p>
+            </div>
+            <button class="modal-close" id="closeDonorModal">✕</button>
+        </div>
+
+        <div id="donorDetailsContent"></div>
+
+        <div class="modal-actions">
+            <button type="button" class="btn-secondary" id="cancelDonorModal">Close</button>
+        </div>
     </div>
 </div>
 {% endblock %}

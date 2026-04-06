@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}Dashboard - BloodLink Admin{% endblock %}
+{% block body_class %}notification-theme-view{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
 {% block page_subtitle %}Overview of blood bank operations{% endblock %}
 
@@ -54,10 +55,10 @@
 </div>
 
 <!-- Blood Type Overview -->
-<div class="content-card">
-    <div class="card-header">
+<div class="content-card-availability">
+    <div class="availability-header">
         <h2 class="card-title">Blood Type Availability</h2>
-        <p class="card-subtitle">Current stock levels across all blood banks</p>
+        <p class="card-subtitle">Current stock levels across all blood banks in Kenya</p>
     </div>
     <div class="blood-type-grid" id="bloodTypeOverview">
         <!-- Populated by JavaScript -->
@@ -90,6 +91,279 @@
         <p>Approve or reject user reviews</p>
     </a>
 </div>
+
+<!-- About Section -->
+<div class="about-section">
+
+    <!-- Top divider -->
+    <div class="about-divider">
+        <span class="about-divider-icon">🩸</span>
+    </div>
+
+    <!-- Hero banner -->
+    <div class="about-hero">
+        <div class="about-hero-bg"></div>
+        <div class="about-hero-content">
+            <div class="about-logo-wrap">
+                <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="BloodLink Logo"
+                    class="about-logo-img">
+            </div>
+            <div>
+                <h1 class="about-hero-title">BloodLink</h1>
+                <p class="about-hero-tagline">Connecting Donors · Saving Lives · Built in Kenya 🇰🇪</p>
+                <div class="about-version-pill">
+                    <span class="about-version-dot"></span>
+                    v2.1.0 · Admin Panel
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Impact stats -->
+    <div class="about-stats-grid">
+        <div class="about-stat-card">
+            <div class="about-stat-icon" style="background:#EFF6FF; color:#2563EB;">👥</div>
+            <div class="about-stat-value" id="impactDonors">0</div>
+            <div class="about-stat-label">Registered Donors</div>
+        </div>
+        <div class="about-stat-card">
+            <div class="about-stat-icon" style="background:#FEF2F2; color:#DC2626;">❤️</div>
+            <div class="about-stat-value" id="impactLives">0</div>
+            <div class="about-stat-label">Lives Saved</div>
+        </div>
+        <div class="about-stat-card">
+            <div class="about-stat-icon" style="background:#F0FDF4; color:#16A34A;">🏥</div>
+            <div class="about-stat-value" id="impactCounties">0</div>
+            <div class="about-stat-label">Counties Covered</div>
+        </div>
+        <div class="about-stat-card">
+            <div class="about-stat-icon" style="background:#FEF3C7; color:#D97706;">⭐</div>
+            <div class="about-stat-value" id="impactRating">0.0</div>
+            <div class="about-stat-label">Community Rating</div>
+        </div>
+    </div>
+
+    <!-- Mission + Story -->
+    <div class="about-two-col">
+        <div class="about-info-card about-mission">
+            <div class="about-card-header">
+                <div class="about-card-bar" style="background:#2563EB;"></div>
+                <span class="about-card-icon">🎯</span>
+                <h3 class="about-card-title">Our Mission</h3>
+            </div>
+            <p class="about-card-text">
+                BloodLink is dedicated to bridging the critical gap between blood donors and patients in need across
+                Kenya and beyond. We believe every drop counts — and that technology can save lives by making blood
+                donation more accessible, efficient, and community-driven.
+            </p>
+            <p class="about-card-text">
+                This admin panel empowers your team to manage the platform, verify donors, monitor blood bank inventory,
+                and ensure every request is fulfilled as fast as possible.
+            </p>
+        </div>
+
+        <div class="about-info-card about-story">
+            <div class="about-card-header">
+                <div class="about-card-bar" style="background:#EA580C;"></div>
+                <span class="about-card-icon">📖</span>
+                <h3 class="about-card-title">Our Story</h3>
+            </div>
+            <p class="about-card-text">
+                BloodLink was born out of a personal experience — watching a loved one struggle to find compatible blood
+                during an emergency. Founded in 2024 in Nairobi, Kenya, our team set out to build a solution that works
+                for every Kenyan, in any county, at any time.
+            </p>
+            <p class="about-card-text">
+                What started as a small app idea has grown into a community of thousands of donors and requesters united
+                by one goal: <strong>no one should die because blood wasn't available.</strong>
+            </p>
+        </div>
+    </div>
+
+    <!-- Features / Why BloodLink -->
+    <div class="about-info-card about-features-card">
+        <div class="about-card-header">
+            <div class="about-card-bar" style="background:#10B981;"></div>
+            <span class="about-card-icon">✨</span>
+            <h3 class="about-card-title">Why BloodLink?</h3>
+        </div>
+        <div class="about-features-grid">
+            <div class="about-feature">
+                <div class="about-feature-icon" style="background:#D1FAE5; color:#10B981;">⚡</div>
+                <div>
+                    <div class="about-feature-title">Real-time Requests</div>
+                    <div class="about-feature-desc">Connect instantly with nearby donors when time matters most.</div>
+                </div>
+            </div>
+            <div class="about-feature">
+                <div class="about-feature-icon" style="background:#DBEAFE; color:#2563EB;">🛡️</div>
+                <div>
+                    <div class="about-feature-title">Verified Community</div>
+                    <div class="about-feature-desc">Safe and secure environment for all donors and requesters.</div>
+                </div>
+            </div>
+            <div class="about-feature">
+                <div class="about-feature-icon" style="background:#FEE2E2; color:#DC2626;">📍</div>
+                <div>
+                    <div class="about-feature-title">Location Based</div>
+                    <div class="about-feature-desc">Find help right where you are, using advanced geolocation.</div>
+                </div>
+            </div>
+            <div class="about-feature">
+                <div class="about-feature-icon" style="background:#FEF3C7; color:#D97706;">🏆</div>
+                <div>
+                    <div class="about-feature-title">Donor Rewards</div>
+                    <div class="about-feature-desc">Earn points and recognition for every life-saving donation.</div>
+                </div>
+            </div>
+            <div class="about-feature">
+                <div class="about-feature-icon" style="background:#F5F3FF; color:#8B5CF6;">🔔</div>
+                <div>
+                    <div class="about-feature-title">Smart Alerts</div>
+                    <div class="about-feature-desc">Instant notifications when your blood type is urgently needed.</div>
+                </div>
+            </div>
+            <div class="about-feature">
+                <div class="about-feature-icon" style="background:#FFF7ED; color:#EA580C;">🏥</div>
+                <div>
+                    <div class="about-feature-title">Blood Bank Directory</div>
+                    <div class="about-feature-desc">Access verified blood banks and inventory across Kenya.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Values -->
+    <div class="about-info-card about-values-card">
+        <div class="about-card-header">
+            <div class="about-card-bar" style="background:#8B5CF6;"></div>
+            <span class="about-card-icon">💜</span>
+            <h3 class="about-card-title">Our Values</h3>
+        </div>
+        <div class="about-values-list">
+            <div class="about-value-row">
+                <div class="about-value-icon" style="background:#DBEAFE; color:#2563EB;">👥</div>
+                <div>
+                    <div class="about-value-label">Community First</div>
+                    <div class="about-value-desc">We put the needs of patients and donors at the center of every
+                        decision we make.</div>
+                </div>
+            </div>
+            <div class="about-value-row">
+                <div class="about-value-icon" style="background:#D1FAE5; color:#16A34A;">👁️</div>
+                <div>
+                    <div class="about-value-label">Transparency</div>
+                    <div class="about-value-desc">Honest communication and clear privacy practices you can always trust.
+                    </div>
+                </div>
+            </div>
+            <div class="about-value-row">
+                <div class="about-value-icon" style="background:#FFF7ED; color:#EA580C;">🚀</div>
+                <div>
+                    <div class="about-value-label">Innovation</div>
+                    <div class="about-value-desc">Continuously improving our technology to save more lives, faster.
+                    </div>
+                </div>
+            </div>
+            <div class="about-value-row">
+                <div class="about-value-icon" style="background:#F5F3FF; color:#8B5CF6;">🌍</div>
+                <div>
+                    <div class="about-value-label">Inclusivity</div>
+                    <div class="about-value-desc">Accessible to every Kenyan, regardless of location or background.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Social + Contact -->
+    <div class="about-two-col">
+        <div class="about-info-card">
+            <div class="about-card-header">
+                <div class="about-card-bar" style="background:#EC4899;"></div>
+                <span class="about-card-icon">📣</span>
+                <h3 class="about-card-title">Follow Us</h3>
+            </div>
+            <div class="about-social-grid">
+                <a href="https://facebook.com/bloodlinkke" target="_blank" class="about-social-btn"
+                    style="background:#1877F2;">
+                    <span>f</span> Facebook
+                </a>
+                <a href="https://twitter.com/bloodlinkapp" target="_blank" class="about-social-btn"
+                    style="background:#1DA1F2;">
+                    <span>𝕏</span> Twitter
+                </a>
+                <a href="https://instagram.com/bloodlink.ke" target="_blank" class="about-social-btn"
+                    style="background:linear-gradient(135deg,#E1306C,#C13584);">
+                    <span>📸</span> Instagram
+                </a>
+                <a href="https://wa.me/254700000000" target="_blank" class="about-social-btn"
+                    style="background:#25D366;">
+                    <span>💬</span> WhatsApp
+                </a>
+                <a href="https://linkedin.com/company/bloodlink" target="_blank" class="about-social-btn"
+                    style="background:#0A66C2;">
+                    <span>in</span> LinkedIn
+                </a>
+                <a href="https://youtube.com/@bloodlinkke" target="_blank" class="about-social-btn"
+                    style="background:#FF0000;">
+                    <span>▶</span> YouTube
+                </a>
+            </div>
+        </div>
+
+        <div class="about-info-card">
+            <div class="about-card-header">
+                <div class="about-card-bar" style="background:#10B981;"></div>
+                <span class="about-card-icon">📬</span>
+                <h3 class="about-card-title">Contact Us</h3>
+            </div>
+            <div class="about-contact-list">
+                <a href="mailto:support@bloodlink.co.ke" class="about-contact-row">
+                    <div class="about-contact-icon" style="background:#DBEAFE; color:#2563EB;">✉️</div>
+                    <div>
+                        <div class="about-contact-label">Email Support</div>
+                        <div class="about-contact-value">support@bloodlink.co.ke</div>
+                    </div>
+                </a>
+                <a href="tel:+254700000000" class="about-contact-row">
+                    <div class="about-contact-icon" style="background:#D1FAE5; color:#16A34A;">📞</div>
+                    <div>
+                        <div class="about-contact-label">Phone / WhatsApp</div>
+                        <div class="about-contact-value">+254 700 000 000</div>
+                    </div>
+                </a>
+                <a href="https://bloodlink.co.ke" target="_blank" class="about-contact-row">
+                    <div class="about-contact-icon" style="background:#FFF7ED; color:#EA580C;">🌐</div>
+                    <div>
+                        <div class="about-contact-label">Website</div>
+                        <div class="about-contact-value">www.bloodlink.co.ke</div>
+                    </div>
+                </a>
+                <div class="about-contact-row">
+                    <div class="about-contact-icon" style="background:#F5F3FF; color:#8B5CF6;">📍</div>
+                    <div>
+                        <div class="about-contact-label">Location</div>
+                        <div class="about-contact-value">Nairobi, Kenya 🇰🇪</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="about-footer">
+        <div class="about-footer-logo">
+            <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="BloodLink Logo"
+                class="about-footer-img">
+            <span class="about-footer-name">BloodLink</span>
+        </div>
+        <p class="about-footer-tagline">We Save Lives · Built with ❤️ in Kenya 🇰🇪</p>
+        <p class="about-footer-copy">© 2026 BloodLink Inc. All rights reserved. · v2.1.0</p>
+    </div>
+
+</div><!-- end about-section -->
+
 {% endblock %}
 
 {% block scripts %}

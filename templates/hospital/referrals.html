@@ -1,0 +1,530 @@
+{% extends "hospital/base.html" %}
+
+{% block title %}Referrals - BloodLink Admin{% endblock %}
+{% block body_class %}notification-theme-view{% endblock %}
+{% block page_title %}Hospital Referrals{% endblock %}
+{% block page_subtitle %}Manage patient referrals between healthcare facilities{% endblock %}
+
+{% block header_actions %}
+<div class="header-actions">
+    <button class="btn-primary" onclick="openNewReferralModal()" style="display: flex; align-items: center; gap: 8px;">
+        <span>➕</span> New Referral
+    </button>
+    <button class="btn-secondary" id="exportBtn">
+        <span>📊</span> Export CSV
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Strip -->
+<div class="stats-strip">
+    <div class="stat-pill c-orange">
+        <span class="sp-icon">📥</span>
+        <div>
+            <div class="sp-label">Inbox</div>
+            <div class="sp-value" id="badgeInbox">—</div>
+        </div>
+    </div>
+    <div class="stat-pill c-blue">
+        <span class="sp-icon">📤</span>
+        <div>
+            <div class="sp-label">Sent</div>
+            <div class="sp-value" id="badgeOutbox">—</div>
+        </div>
+    </div>
+</div>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+    <button class="tab-btn active" data-tab="inbox" id="tabInbox">
+        📥 Inbox
+        <span class="tab-badge" id="badgeInboxTab" style="display:none">0</span>
+    </button>
+    <button class="tab-btn" data-tab="outbox" id="tabOutbox">
+        📤 Sent
+    </button>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+    <div class="search-wrap">
+        <span class="si">🔍</span>
+        <input type="text" id="referralSearch" placeholder="Search patient, hospital...">
+    </div>
+    <select id="filterStatus">
+        <option value="all">All Statuses</option>
+        <option value="pending">Pending</option>
+        <option value="accepted">Accepted</option>
+        <option value="declined">Declined</option>
+        <option value="completed">Completed</option>
+    </select>
+    <select id="filterBlood">
+        <option value="all">All Blood Types</option>
+        <option>A+</option>
+        <option>A-</option>
+        <option>B+</option>
+        <option>B-</option>
+        <option>AB+</option>
+        <option>AB-</option>
+        <option>O+</option>
+        <option>O-</option>
+    </select>
+    <select id="filterUrgency">
+        <option value="all">All Urgencies</option>
+        <option value="critical">🚨 Critical</option>
+        <option value="urgent">⚠️ Urgent</option>
+        <option value="standard">ℹ️ Standard</option>
+    </select>
+    <span class="result-count" id="resultCount">0 results</span>
+</div>
+
+<!-- Table Wrap -->
+<div class="table-wrap">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Patient / <span id="thPeer">From</span></th>
+                <th>Blood</th>
+                <th>Urgency</th>
+                <th class="hide-mobile">Reason</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Chat</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="referralsTable">
+            <!-- Skeleton Rows -->
+            <tr class="skeleton-row">
+                <td colspan="9">
+                    <div class="skeleton" style="height: 52px; margin: 4px 0; border-radius: 8px; opacity: 0.6;"></div>
+                </td>
+            </tr>
+            <tr class="skeleton-row">
+                <td colspan="9">
+                    <div class="skeleton" style="height: 52px; margin: 4px 0; border-radius: 8px; opacity: 0.4;"></div>
+                </td>
+            </tr>
+            <tr class="skeleton-row">
+                <td colspan="9">
+                    <div class="skeleton" style="height: 52px; margin: 4px 0; border-radius: 8px; opacity: 0.2;"></div>
+                </td>
+            </tr>
+        </tbody>
+        <tr>
+            <td colspan="8" class="empty-row">
+                <div class="loading-placeholder">
+                    <p>Connecting to referrals service...</p>
+                </div>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<style>
+    /* Stats Strip */
+    .stats-strip {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+    }
+
+    .stat-pill {
+        background: #111111;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-top: 3px solid #22c55e;
+        border-radius: 12px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 160px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    }
+
+    .sp-icon {
+        font-size: 24px;
+    }
+
+    .sp-label {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.6);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 600;
+    }
+
+    .sp-value {
+        font-size: 24px;
+        font-weight: 800;
+        color: #22c55e;
+        /* Green */
+    }
+
+    .c-orange .sp-value {
+        color: #f97316;
+    }
+
+    .c-blue .sp-value {
+        color: #3B82F6;
+    }
+
+    .c-green .sp-value {
+        color: #10B981;
+    }
+
+    /* Tab Bar */
+    .tab-bar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 1px;
+    }
+
+    .tab-btn {
+        padding: 10px 24px;
+        background: transparent;
+        border: none;
+        color: rgba(255, 255, 255, 0.5);
+        font-weight: 600;
+        cursor: pointer;
+        position: relative;
+        transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+        color: white;
+    }
+
+    .tab-btn.active {
+        color: #f97316;
+    }
+
+    .tab-btn.active::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #f97316;
+        box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
+    }
+
+    .tab-badge {
+        background: #f97316;
+        color: white;
+        font-size: 10px;
+        padding: 1px 6px;
+        border-radius: 10px;
+        margin-left: 6px;
+        box-shadow: 0 0 5px rgba(249, 115, 22, 0.4);
+    }
+
+    /* Toolbar */
+    .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .search-wrap {
+        position: relative;
+        flex: 1;
+        min-width: 250px;
+    }
+
+    .si {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: rgba(255, 255, 255, 0.4);
+    }
+
+    .search-wrap input {
+        width: 100%;
+        padding: 10px 12px 10px 38px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        color: white;
+        outline: none;
+    }
+
+    .toolbar select {
+        padding: 10px 15px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        color: white;
+        outline: none;
+    }
+
+    .result-count {
+        margin-left: auto;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.4);
+    }
+
+    /* Table Customizations */
+    .id-chip {
+        font-family: monospace;
+        background: rgba(59, 130, 246, 0.1);
+        color: #60A5FA;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 11px;
+    }
+
+    .person-cell {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .person-name {
+        font-weight: 600;
+    }
+
+    .person-sub {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.4);
+    }
+
+    .blood-badge {
+        background: rgba(239, 68, 68, 0.1);
+        color: #F87171;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 6px;
+    }
+
+    .data-table th {
+        background: #1a1a1a;
+        text-align: left;
+        padding: 16px 20px;
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: #22c55e;
+        /* Green */
+        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .data-table td {
+        padding: 16px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        color: #ffffff;
+        font-size: 14px;
+    }
+
+    .urg-badge {
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .urg-critical {
+        background: rgba(239, 68, 68, 0.2);
+        color: #EF4444;
+    }
+
+    .urg-urgent {
+        background: rgba(245, 158, 11, 0.2);
+        color: #F59E0B;
+    }
+
+    .urg-standard {
+        background: rgba(59, 130, 246, 0.2);
+        color: #3B82F6;
+    }
+
+    .status-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 6px;
+    }
+
+    .dot-pending {
+        background: #F59E0B;
+        box-shadow: 0 0 8px #F59E0B;
+    }
+
+    .dot-accepted {
+        background: #10B981;
+        box-shadow: 0 0 8px #10B981;
+    }
+
+    .dot-declined {
+        background: #EF4444;
+        box-shadow: 0 0 8px #EF4444;
+    }
+
+    .dot-completed {
+        background: #8B5CF6;
+        box-shadow: 0 0 8px #8B5CF6;
+    }
+
+    .action-row {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-1px);
+    }
+
+    .btn-icon.green {
+        color: #10B981;
+        border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-icon.red {
+        color: #EF4444;
+        border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-icon.blue {
+        color: #3B82F6;
+        border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    @media (max-width: 768px) {
+        .hide-mobile {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block modals %}
+<!-- Referral Detail & Chat Modal -->
+<div id="referralDetailModal" class="modal-overlay hidden">
+    <div class="modal-content modal-xl">
+        <div class="modal-header">
+            <div>
+                <h2 id="detailTitle">Referral Details</h2>
+                <p class="modal-subtitle" id="detailSubtitle">ID: —</p>
+            </div>
+            <button class="modal-close" onclick="closeReferralDetail()">✕</button>
+        </div>
+        <div class="modal-split-layout">
+            <!-- Left Side: Information -->
+            <div class="modal-info-panel" id="referralDetailContent">
+                <!-- Populated by JS -->
+            </div>
+            <!-- Right Side: Chat -->
+            <div class="modal-chat-panel">
+                <div class="chat-header">
+                    <span>💬 Referral Discussion</span>
+                </div>
+                <div class="chat-messages" id="chatMessageList">
+                    <!-- Messages populated by JS -->
+                    <div class="chat-empty">Start the conversation...</div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" id="chatInput" placeholder="Type a message..." autocomplete="off">
+                    <button class="chat-send-btn" id="btnSendChat">Send</button>
+                </div>
+            </div>
+        </div>
+        <div class="modal-actions" id="referralDetailActions">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+</div>
+
+<!-- New Referral Modal -->
+<div id="newReferralModal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h2>New Patient Referral</h2>
+            <button class="modal-close" onclick="closeNewReferralModal()">✕</button>
+        </div>
+        <form id="newReferralForm" onsubmit="handleReferralSubmit(event)">
+            <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 20px;">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>Destination Hospital</label>
+                    <select id="targetHospital" required>
+                        <option value="">Select a hospital...</option>
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Patient Name</label>
+                    <input type="text" id="patientName" required placeholder="Full Name">
+                </div>
+                <div class="form-group">
+                    <label>Blood Type</label>
+                    <select id="bloodType" required>
+                        <option value="">Select Type...</option>
+                        <option>A+</option>
+                        <option>A-</option>
+                        <option>B+</option>
+                        <option>B-</option>
+                        <option>AB+</option>
+                        <option>AB-</option>
+                        <option>O+</option>
+                        <option>O-</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Units Needed</label>
+                    <input type="number" id="units" min="1" max="20" value="1" required>
+                </div>
+                <div class="form-group">
+                    <label>Urgency</label>
+                    <select id="urgency" required>
+                        <option value="standard">Standard</option>
+                        <option value="urgent">Urgent</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>Reason for Referral / Diagnosis</label>
+                    <textarea id="reason" rows="3" required placeholder="Describe the clinical need..."></textarea>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>Initial Message (Optional)</label>
+                    <textarea id="initialMessage" rows="2"
+                        placeholder="Send a message to the other hospital..."></textarea>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" onclick="closeNewReferralModal()">Cancel</button>
+                <button type="submit" class="btn-primary" id="btnSubmitReferral">Initiate Referral</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='hospital/referrals.js') }}"></script>
+{% endblock %}

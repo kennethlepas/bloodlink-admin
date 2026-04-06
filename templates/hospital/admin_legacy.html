@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Hospital Admin - BloodLink{% endblock %}
+{% block page_title %}Hospital Dashboard{% endblock %}
+{% block page_subtitle %}Manage your facility's blood requests and intra-hospital communications{% endblock %}
+
+{% block content %}
+<!-- Hospital Stats Grid -->
+<div class="stats-grid">
+    <div class="stat-card stat-primary" data-stat="requests">
+        <div class="stat-icon">📋</div>
+        <div class="stat-details">
+            <div class="stat-label">Active Requests</div>
+            <div class="stat-value" id="hospitalActiveRequests">0</div>
+            <div class="stat-change">From your facility</div>
+        </div>
+    </div>
+
+    <div class="stat-card stat-success" data-stat="referrals">
+        <div class="stat-icon">🔗</div>
+        <div class="stat-details">
+            <div class="stat-label">Total Referrals</div>
+            <div class="stat-value" id="hospitalTotalReferrals">0</div>
+            <div class="stat-change">Sent & received</div>
+        </div>
+    </div>
+
+    <div class="stat-card stat-info" data-stat="stock">
+        <div class="stat-icon">🩸</div>
+        <div class="stat-details">
+            <div class="stat-label">Blood Stock</div>
+            <div class="stat-value" id="hospitalBloodStock">0</div>
+            <div class="stat-change">Available units</div>
+        </div>
+    </div>
+
+    <div class="stat-card stat-warning" data-stat="pending">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-details">
+            <div class="stat-label">Pending Actions</div>
+            <div class="stat-value" id="hospitalPendingActions">0</div>
+            <div class="stat-change">Requires attention</div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions for Hospitals -->
+<div class="quick-actions-grid" style="margin-top: 32px;">
+    <a href="/requests" class="quick-action-card">
+        <span class="quick-action-icon">📋</span>
+        <h3>Blood Requests</h3>
+        <p>Post new requests or manage existing ones</p>
+    </a>
+
+    <a href="/referrals" class="quick-action-card">
+        <span class="quick-action-icon">🔗</span>
+        <h3>Referrals</h3>
+        <p>Refer patients to other hospitals for blood</p>
+    </a>
+
+    <a href="/chat" class="quick-action-card">
+        <span class="quick-action-icon">💬</span>
+        <h3>BloodLink Connect</h3>
+        <p>Chat with other hospital administrators</p>
+    </a>
+
+    <a href="/reports" class="quick-action-card">
+        <span class="quick-action-icon">📊</span>
+        <h3>Facility Reports</h3>
+        <p>View and export your hospital's activity reports</p>
+    </a>
+</div>
+
+<!-- Hospital-Only Notice -->
+<div class="hospital-only-content">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+        <span style="font-size: 24px;">🏥</span>
+        <div>
+            <h3 style="font-size: 16px; font-weight: 700; margin: 0;">Hospital Admin Portal</h3>
+            <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">You have limited access to your
+                facility data only</p>
+        </div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+        <div style="background: white; padding: 12px; border-radius: 8px;">
+            <div style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px;">✅ You Can Access</div>
+            <ul style="margin: 0; padding-left: 16px; font-size: 13px; color: var(--text-secondary);">
+                <li>Your facility's blood requests</li>
+                <li>Your hospital's inventory levels</li>
+                <li>Patient referrals</li>
+                <li>Inter-hospital chat</li>
+                <li>Facility-specific reports</li>
+            </ul>
+        </div>
+        <div style="background: white; padding: 12px; border-radius: 8px;">
+            <div style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px;">🚫 Restricted Access</div>
+            <ul style="margin: 0; padding-left: 16px; font-size: 13px; color: var(--text-secondary);">
+                <li>Other hospitals' data</li>
+                <li>System-wide user management</li>
+                <li>Blood bank administration</li>
+                <li>Platform settings</li>
+                <li>Audit logs (Super Admin only)</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Internal Inventory Section -->
+<div class="content-card" style="margin-top: 32px;">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h2 class="card-title">Your Inventory Levels</h2>
+            <p class="card-subtitle">Real-time view of blood units available in your bank</p>
+        </div>
+        <button class="btn-primary btn-small" id="updateInventoryBtn">
+            <span>🔄</span> Update Inventory
+        </button>
+    </div>
+    <div class="blood-type-grid" id="hospitalInventoryGrid">
+        <!-- Populated by JS -->
+        <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Loading inventory data...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity Section -->
+<div class="content-card" style="margin-top: 32px;">
+    <div class="card-header">
+        <h2 class="card-title">Recent Facility Activity</h2>
+        <p class="card-subtitle">Latest actions and updates from your hospital</p>
+    </div>
+    <div id="hospitalRecentActivity">
+        <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Loading recent activity...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Update Inventory Modal -->
+<div id="hospitalInventoryModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Update Blood Inventory</h2>
+            <button class="modal-close" id="closeInventoryModal">✕</button>
+        </div>
+        <form id="hospitalInventoryForm">
+            <div class="inventory-update-grid"
+                style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px;">
+                <div class="form-group">
+                    <label>A+ Units</label>
+                    <input type="number" name="A+" min="0" value="0" id="inv_A+">
+                </div>
+                <div class="form-group">
+                    <label>A- Units</label>
+                    <input type="number" name="A-" min="0" value="0" id="inv_A-">
+                </div>
+                <div class="form-group">
+                    <label>B+ Units</label>
+                    <input type="number" name="B+" min="0" value="0" id="inv_B+">
+                </div>
+                <div class="form-group">
+                    <label>B- Units</label>
+                    <input type="number" name="B-" min="0" value="0" id="inv_B-">
+                </div>
+                <div class="form-group">
+                    <label>AB+ Units</label>
+                    <input type="number" name="AB+" min="0" value="0" id="inv_AB+">
+                </div>
+                <div class="form-group">
+                    <label>AB- Units</label>
+                    <input type="number" name="AB-" min="0" value="0" id="inv_AB-">
+                </div>
+                <div class="form-group">
+                    <label>O+ Units</label>
+                    <input type="number" name="O+" min="0" value="0" id="inv_O+">
+                </div>
+                <div class="form-group">
+                    <label>O- Units</label>
+                    <input type="number" name="O-" min="0" value="0" id="inv_O-">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="btn-primary">Save Changes</button>
+                <button type="button" class="btn-secondary" id="cancelInventoryModal">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='hospital/hospital-admin.js') }}"></script>
+{% endblock %}

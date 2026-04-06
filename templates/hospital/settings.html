@@ -1,0 +1,402 @@
+{% extends "hospital/base.html" %}
+
+{% block body_class %}notification-theme-view{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="header-content">
+        <div class="header-title">
+            <h1>Hospital Settings</h1>
+            <p>Manage your facility profile, inventory thresholds, and operating hours</p>
+        </div>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="settings-container">
+        <!-- Settings Tabs -->
+        <div class="settings-tabs">
+            <button class="settings-tab active" data-tab="profile">
+                <span class="tab-icon">🏥</span>
+                <span class="tab-label">Facility Profile</span>
+            </button>
+            <button class="settings-tab" data-tab="inventory">
+                <span class="tab-icon">🩸</span>
+                <span class="tab-label">Inventory Thresholds</span>
+            </button>
+            <button class="settings-tab" data-tab="hours">
+                <span class="tab-icon">🕒</span>
+                <span class="tab-label">Operating Hours</span>
+            </button>
+            <button class="settings-tab" data-tab="security">
+                <span class="tab-icon">🔒</span>
+                <span class="tab-label">Security</span>
+            </button>
+        </div>
+
+        <!-- Settings Panes -->
+        <div class="settings-panes">
+            <!-- Profile Pane -->
+            <div class="settings-pane active" id="pane-profile">
+                <form id="profileForm" class="settings-form">
+                    <div class="form-section">
+                        <h3>General Information</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Facility Name</label>
+                                <div class="skeleton-wrapper" id="skeleton-name">
+                                    <div class="skeleton skeleton-text"></div>
+                                </div>
+                                <input type="text" id="hospitalName" name="name" class="hidden">
+                            </div>
+                            <div class="form-group">
+                                <label>MFL Code</label>
+                                <div class="skeleton-wrapper" id="skeleton-code">
+                                    <div class="skeleton skeleton-text" style="width: 40%"></div>
+                                </div>
+                                <input type="text" id="facilityCode" name="facilityCode" readonly class="hidden">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Email Address</label>
+                                <div class="skeleton-wrapper" id="skeleton-email">
+                                    <div class="skeleton skeleton-text"></div>
+                                </div>
+                                <input type="email" id="hospitalEmail" name="email" class="hidden">
+                            </div>
+                            <div class="form-group">
+                                <label>Phone Number</label>
+                                <div class="skeleton-wrapper" id="skeleton-phone">
+                                    <div class="skeleton skeleton-text"></div>
+                                </div>
+                                <input type="tel" id="hospitalPhone" name="phoneNumber" class="hidden">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>Location Detailed</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>County</label>
+                                <div class="skeleton-wrapper" id="skeleton-county">
+                                    <div class="skeleton skeleton-text"></div>
+                                </div>
+                                <input type="text" id="hospitalCounty" name="county" class="hidden">
+                            </div>
+                            <div class="form-group">
+                                <label>Sub-County</label>
+                                <div class="skeleton-wrapper" id="skeleton-subcounty">
+                                    <div class="skeleton skeleton-text"></div>
+                                </div>
+                                <input type="text" id="hospitalSubCounty" name="subCounty" class="hidden">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Physical Address</label>
+                            <div class="skeleton-wrapper" id="skeleton-address">
+                                <div class="skeleton skeleton-text" style="height: 60px"></div>
+                            </div>
+                            <textarea id="hospitalAddress" name="address" rows="3" class="hidden"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary" id="saveProfileBtn">
+                            <span class="btn-spinner hidden">🔄</span>
+                            Save Profile Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Inventory Pane -->
+            <div class="settings-pane" id="pane-inventory">
+                <form id="inventorySettingsForm" class="settings-form">
+                    <div class="form-section">
+                        <h3>Critical Stock Thresholds</h3>
+                        <p class="section-desc">Receive alerts and highlight stock when units fall below these levels.
+                        </p>
+
+                        <div class="threshold-grid">
+                            {% for type in ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] %}
+                            <div class="threshold-item">
+                                <label>{{ type }} Threshold</label>
+                                <input type="number" name="threshold_{{ type }}" value="10" min="0">
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Save Thresholds</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Hours Pane -->
+            <div class="settings-pane" id="pane-hours">
+                <form id="hoursForm" class="settings-form">
+                    <div class="form-section">
+                        <h3>Operating Hours</h3>
+                        <div class="hours-grid">
+                            {% for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+                            %}
+                            <div class="hour-row">
+                                <div class="day-label">{{ day }}</div>
+                                <div class="hour-inputs">
+                                    <input type="time" name="{{ day.lower() }}_open" value="08:00">
+                                    <span>to</span>
+                                    <input type="time" name="{{ day.lower() }}_close" value="17:00">
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" name="{{ day.lower() }}_closed"
+                                        id="{{ day.lower() }}_closed">
+                                    <span class="slider round"></span>
+                                    <span class="status-label">Open</span>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Update Schedule</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Security Pane -->
+            <div class="settings-pane" id="pane-security">
+                <div class="form-section">
+                    <h3>Change Password</h3>
+                    <div class="form-group">
+                        <label>Current Password</label>
+                        <input type="password" id="currentPassword">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>New Password</label>
+                            <input type="password" id="newPassword">
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm New Password</label>
+                            <input type="password" id="confirmPassword">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-primary" id="updatePasswordBtn">Update Password</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .settings-container {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 24px;
+        background: white;
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        min-height: 600px;
+        margin-top: 20px;
+    }
+
+    .settings-tabs {
+        background: var(--gray-50);
+        padding: 24px 12px;
+        border-right: 1px solid var(--gray-200);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .settings-tab {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border: none;
+        background: transparent;
+        border-radius: var(--border-radius-sm);
+        color: var(--text-secondary);
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        text-align: left;
+    }
+
+    .settings-tab:hover {
+        background: var(--gray-100);
+        color: var(--primary);
+    }
+
+    .settings-tab.active {
+        background: var(--primary-light);
+        color: var(--primary);
+    }
+
+    .settings-panes {
+        padding: 32px;
+    }
+
+    .settings-pane {
+        display: none;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .settings-pane.active {
+        display: block;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .form-section {
+        margin-bottom: 32px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid var(--gray-100);
+    }
+
+    .form-section h3 {
+        font-size: 18px;
+        margin-bottom: 16px;
+        color: var(--text-primary);
+    }
+
+    .section-desc {
+        color: var(--text-secondary);
+        font-size: 14px;
+        margin-bottom: 20px;
+        margin-top: -12px;
+    }
+
+    .threshold-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 16px;
+    }
+
+    .threshold-item label {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .hour-row {
+        display: grid;
+        grid-template-columns: 120px 1fr 120px;
+        align-items: center;
+        gap: 24px;
+        padding: 12px 0;
+        border-bottom: 1px dashed var(--gray-100);
+    }
+
+    .day-label {
+        font-weight: 600;
+    }
+
+    .hour-inputs {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .hour-inputs input {
+        width: 120px;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 24px;
+    }
+
+    .hidden {
+        display: none !important;
+    }
+
+    /* Switch toggle */
+    .switch {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: auto;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        width: 40px;
+        height: 20px;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 20px;
+        cursor: pointer;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+
+    input:checked+.slider {
+        background-color: var(--success);
+    }
+
+    input:checked+.slider:before {
+        transform: translateX(20px);
+    }
+
+    .status-label {
+        font-size: 12px;
+        font-weight: 600;
+        min-width: 40px;
+    }
+
+    .btn-spinner {
+        display: inline-block;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/hospital/settings.js"></script>
+{% endblock %}

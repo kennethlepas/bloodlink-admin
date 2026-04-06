@@ -1,0 +1,116 @@
+{% extends "hospital/base.html" %}
+
+{% block body_class %}notification-theme-view{% endblock %}
+
+{% block title %}My Blood Requests - BloodLink{% endblock %}
+{% block page_title %}Blood Requests{% endblock %}
+{% block page_subtitle %}Manage requests from your facility{% endblock %}
+
+{% block header_actions %}
+<div class="header-actions">
+    <button class="btn-primary" id="exportRequestsBtn" onclick="exportRequestsData()">
+        <span>📊</span>
+        <span>Export Report</span>
+    </button>
+    <button class="btn-secondary" id="refreshRequestsBtn" onclick="refreshRequests()">
+        <span>🔄</span>
+        <span>Refresh</span>
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div class="card-header">
+        <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-box" id="requestsSearch" placeholder="Search by patient or blood type...">
+        </div>
+        <div class="filter-group">
+            <select class="filter-select" id="requestStatusFilter">
+                <option value="all">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="accepted">Accepted</option>
+                <option value="completed">Completed</option>
+            </select>
+            <select class="filter-select" id="urgencyFilter">
+                <option value="all">All Urgencies</option>
+                <option value="critical">🚨 Critical</option>
+                <option value="urgent">⚠️ Urgent</option>
+                <option value="moderate">ℹ️ Moderate</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 15%">Request ID</th>
+                    <th style="width: 25%">Patient</th>
+                    <th style="width: 15%">Blood Type</th>
+                    <th style="width: 10%">Units</th>
+                    <th style="width: 15%">Urgency</th>
+                    <th style="width: 10%">Status</th>
+                    <th style="width: 10%">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="requestsTableBody">
+                <tr>
+                    <td colspan="7" class="empty-state">
+                        <div class="empty-state-icon">🩸</div>
+                        <p>Loading your facility's requests...</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<!-- Request Details Modal -->
+<div id="requestDetailsModal" class="modal-overlay">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <div>
+                <h2>Blood Request Details</h2>
+                <p class="modal-subtitle" id="requestModalSubtitle">View request information</p>
+            </div>
+            <button class="modal-close" id="closeRequestModal">✕</button>
+        </div>
+        <div id="requestDetailsContent" style="max-height: 60vh; overflow-y: auto; padding: 20px;"></div>
+        <div class="modal-actions" id="requestModalActions">
+            <button class="btn-secondary" onclick="closeRequestModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Rejection Reason Modal -->
+<div id="rejectRequestModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Reject Blood Request</h2>
+            <button class="modal-close" id="closeRejectModal">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Rejection Reason *</label>
+                <textarea id="rejectionReason" rows="4"
+                    placeholder="Please provide a reason for rejecting this request..."
+                    style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(0,0,0,0.2); color:white;"></textarea>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-secondary" id="cancelRejectBtn">Cancel</button>
+            <button class="btn-primary" id="confirmRejectBtn" style="background: var(--danger-color, #ef4444);">Confirm
+                Rejection</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='hospital/requests.js') }}"></script>
+{% endblock %}

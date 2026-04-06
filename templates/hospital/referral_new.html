@@ -1,0 +1,228 @@
+{% extends "hospital/base.html" %}
+
+{% block title %}New Referral - BloodLink Admin{% endblock %}
+{% block body_class %}notification-theme-view{% endblock %}
+{% block page_title %}New Patient Referral{% endblock %}
+{% block page_subtitle %}Initiate a professional patient transfer to another facility{% endblock %}
+
+{% block header_actions %}
+<div class="header-actions">
+    <a href="/hospital/hospitals" class="btn-secondary">
+        <span>⬅</span> Back to Directory
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="referral-container">
+    <div class="referral-card">
+        <form id="referralForm" class="referral-form">
+            <div class="form-section">
+                <h3 class="section-title">🏥 Patient Information</h3>
+                <div class="form-group">
+                    <label>Patient Full Name *</label>
+                    <select name="patientName" id="patientName" required>
+                        <option value="">Select Patient (from active requests)</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Blood Type Required *</label>
+                        <select name="bloodType" id="referralBloodType" required>
+                            <option value="">Select Blood Type</option>
+                            <option>A+</option>
+                            <option>A-</option>
+                            <option>B+</option>
+                            <option>B-</option>
+                            <option>AB+</option>
+                            <option>AB-</option>
+                            <option>O+</option>
+                            <option>O-</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Units Needed</label>
+                        <input type="number" name="units" id="referralUnits" placeholder="e.g. 2" min="1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3 class="section-title">🚑 Referral Details</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Urgency Level *</label>
+                        <select name="urgency" id="referralUrgency" required>
+                            <option value="standard">Standard</option>
+                            <option value="urgent">⚠️ Urgent</option>
+                            <option value="critical">🚨 Critical</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="targetFacilityGroup">
+                        <label>Target Facility (Destination) *</label>
+                        <select name="targetHospital" id="targetFacility" required>
+                            <option value="">Loading facilities...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Reason for Referral *</label>
+                    <textarea name="reason" id="referralReason" rows="4"
+                        placeholder="Provide a clear medical reason for this referral..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Additional Clinical Notes</label>
+                    <textarea name="notes" id="referralNotes" rows="3"
+                        placeholder="Any additional context for the receiving facility..."></textarea>
+                </div>
+            </div>
+
+            <div class="referral-actions">
+                <button type="button" class="btn-cancel" id="cancelBtn">Cancel & Exit</button>
+                <button type="submit" class="btn-submit" id="sendReferralBtn">
+                    <span>📤</span> Submit Referral
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .referral-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding-bottom: 40px;
+    }
+
+    .referral-card {
+        background: #111111;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-top: 4px solid #22c55e;
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .form-section {
+        margin-bottom: 32px;
+    }
+
+    .section-title {
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: #22c55e;
+        /* Green */
+        margin-bottom: 24px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #ffffff;
+        margin-bottom: 8px;
+        opacity: 0.9;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 14px 16px;
+        background: #000000;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 10px;
+        color: #ffffff;
+        font-size: 14px;
+        outline: none;
+        transition: all 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        border-color: #ffffff;
+        background: #000000;
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .referral-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 16px;
+        margin-top: 20px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-submit {
+        padding: 14px 32px;
+        background: #ffffff;
+        color: #000000;
+        border: none;
+        border-radius: 10px;
+        font-weight: 800;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        transition: all 0.2s;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .btn-submit:hover {
+        background: #e5e7eb;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-cancel {
+        padding: 12px 24px;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-cancel:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: white;
+    }
+
+    @media (max-width: 600px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .referral-card {
+            padding: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='hospital/referral_new.js') }}"></script>
+{% endblock %}

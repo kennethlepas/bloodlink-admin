@@ -1,0 +1,857 @@
+{% extends "base.html" %}
+
+{% block body_class %}notification-theme-view{% endblock %}
+
+{% block title %}Hospital Directory – BloodLink Admin{% endblock %}
+
+{% block extra_head %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,400&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+    :root {
+        --dir-bg: #f5f2ee;
+        --dir-surface: #ffffff;
+        --dir-surface2: #f9f7f4;
+        --dir-border: #e8e3dc;
+        --dir-red: #c0392b;
+        --dir-text: #2c2825;
+        --dir-text-muted: #7d756d;
+    }
+
+    .directory-container {
+        font-family: 'DM Sans', sans-serif;
+        color: var(--dir-text);
+        margin: -20px;
+        background: var(--dir-bg);
+        min-height: calc(100vh - 120px);
+    }
+
+    #syncProgress {
+        background: var(--dir-surface);
+        border: 1px solid var(--dir-border);
+        border-left: 4px solid var(--dir-red);
+        border-radius: 8px;
+        margin: 14px 20px;
+        padding: 12px 18px;
+        display: none;
+        align-items: center;
+        gap: 16px;
+        box-shadow: 0 2px 20px rgba(44, 40, 37, .08);
+    }
+
+    .sync-bar-wrap {
+        flex: 1;
+        background: var(--dir-surface2);
+        border-radius: 4px;
+        height: 6px;
+        overflow: hidden;
+    }
+
+    .sync-bar-fill {
+        height: 100%;
+        background: var(--dir-red);
+        border-radius: 4px;
+        width: 0;
+        transition: width .25s ease;
+    }
+
+    #syncMsg {
+        font-size: 12px;
+        color: var(--dir-text-muted);
+        white-space: nowrap;
+    }
+
+    #syncPct {
+        font-size: 12px;
+        font-family: 'DM Mono', monospace;
+        color: var(--dir-red);
+        width: 36px;
+        text-align: right;
+    }
+
+    .stats-bar {
+        display: flex;
+        gap: 14px;
+        padding: 18px 20px 0;
+        flex-wrap: wrap;
+    }
+
+    .stat-card {
+        background: var(--dir-surface);
+        border: 1px solid var(--dir-border);
+        border-radius: 8px;
+        padding: 14px 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 160px;
+        flex: 1;
+    }
+
+    .stat-icon {
+        font-size: 22px;
+    }
+
+    .stat-label {
+        font-size: 10px;
+        color: var(--dir-text-muted);
+        text-transform: uppercase;
+        letter-spacing: .6px;
+    }
+
+    .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 1;
+        font-family: 'Fraunces', serif;
+    }
+
+    .c-red .stat-value {
+        color: var(--dir-red);
+    }
+
+    .c-green .stat-value {
+        color: #1e8449;
+    }
+
+    .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 20px 12px;
+        flex-wrap: wrap;
+    }
+
+    .search-wrap {
+        position: relative;
+        flex: 1;
+        min-width: 220px;
+        max-width: 360px;
+    }
+
+    .search-wrap .si {
+        position: absolute;
+        left: 11px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 13px;
+        color: var(--dir-text-muted);
+    }
+
+    .search-wrap input {
+        width: 100%;
+        padding: 9px 12px 9px 32px;
+        background: var(--dir-surface);
+        border: 1px solid var(--dir-border);
+        border-radius: 8px;
+        color: var(--dir-text);
+        font-size: 13px;
+        outline: none;
+        transition: border-color .15s;
+    }
+
+    .search-wrap input:focus {
+        border-color: var(--dir-red);
+    }
+
+    select {
+        padding: 9px 13px;
+        background: var(--dir-surface);
+        border: 1px solid var(--dir-border);
+        border-radius: 8px;
+        color: var(--dir-text);
+        font-size: 13px;
+        outline: none;
+    }
+
+    .result-count {
+        font-family: 'DM Mono', monospace;
+        font-size: 11px;
+        color: var(--dir-text-muted);
+        margin-left: auto;
+    }
+
+    .table-container {
+        padding: 0 20px 40px;
+    }
+
+    .main-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        background: var(--dir-surface);
+        border: 1px solid var(--dir-border);
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 20px rgba(44, 40, 37, .08);
+    }
+
+    .main-table th {
+        background: var(--dir-surface2);
+        border-bottom: 1px solid var(--dir-border);
+        text-align: left;
+        padding: 12px 18px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--dir-text-muted);
+    }
+
+    .main-table td {
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--dir-border);
+        vertical-align: middle;
+    }
+
+    .main-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .cell-main-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .bank-avatar {
+        width: 36px;
+        height: 36px;
+        background: var(--dir-surface2);
+        border: 1px solid var(--dir-border);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+    }
+
+    .bank-name {
+        font-family: 'Fraunces', serif;
+        font-weight: 700;
+        font-size: 15px;
+        color: var(--dir-text);
+    }
+
+    .bank-code {
+        font-family: 'DM Mono', monospace;
+        font-size: 11px;
+        color: var(--dir-red);
+        background: rgba(192, 57, 43, .1);
+        padding: 1px 5px;
+        border-radius: 4px;
+        margin-left: 6px;
+    }
+
+    .ver-badge {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 2px 7px;
+        border-radius: 20px;
+    }
+
+    .ver-yes {
+        background: rgba(30, 132, 73, .1);
+        color: #1e8449;
+    }
+
+    .ver-no {
+        background: rgba(125, 117, 109, .1);
+        color: #7d756d;
+    }
+
+    .loc-text {
+        font-size: 12.5px;
+        color: var(--dir-text-muted);
+    }
+
+    .contact-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 12.5px;
+    }
+
+    .bt-chip {
+        display: inline-block;
+        font-size: 10.5px;
+        font-weight: 600;
+        padding: 2px 6px;
+        border: 1px solid var(--dir-border);
+        border-radius: 4px;
+        margin: 2px;
+        background: var(--dir-surface2);
+    }
+
+    .bt-extra {
+        font-size: 10px;
+        color: var(--dir-text-muted);
+        font-weight: 600;
+        margin-left: 4px;
+    }
+
+    .no-stock {
+        font-style: italic;
+        color: var(--dir-text-muted);
+        font-size: 12px;
+    }
+
+    .units-cell {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .units-num {
+        font-family: 'Fraunces', serif;
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .units-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        font-weight: 600;
+        color: var(--dir-text-muted);
+    }
+
+    .stock-out .units-num {
+        color: #5d5651;
+    }
+
+    .stock-low .units-num {
+        color: var(--dir-red);
+    }
+
+    .stock-ok .units-num {
+        color: #1e8449;
+    }
+
+    .btn-detail {
+        background: var(--dir-surface);
+        border: 1px solid var(--dir-border);
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all .15s;
+    }
+
+    .btn-detail:hover {
+        background: var(--dir-surface2);
+        border-color: var(--dir-text-muted);
+    }
+
+    /* Modal styles */
+    .dir-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(44, 40, 37, .6);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        display: none;
+    }
+
+    .dir-modal-overlay.open {
+        display: flex;
+    }
+
+    .dir-modal-card {
+        background: var(--dir-bg);
+        width: 90%;
+        max-width: 600px;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 10px 50px rgba(0, 0, 0, .2);
+    }
+
+    .dir-modal-head {
+        padding: 24px 32px;
+        background: var(--dir-surface);
+        border-bottom: 1px solid var(--dir-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .dir-modal-head h2 {
+        font-family: 'Fraunces', serif;
+        font-size: 22px;
+    }
+
+    .dir-modal-body {
+        padding: 32px;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    .dir-modal-foot {
+        padding: 20px 32px;
+        background: var(--dir-surface2);
+        border-top: 1px solid var(--dir-border);
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+
+    .inv-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    .inv-card {
+        background: #fff;
+        border: 1px solid var(--dir-border);
+        border-radius: 8px;
+        padding: 12px;
+        text-align: center;
+    }
+
+    .inv-type {
+        font-weight: 700;
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+
+    .inv-units {
+        font-family: 'Fraunces', serif;
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .inv-status {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: .5px;
+        margin: 4px 0;
+    }
+
+    .inv-out {
+        border-top: 3px solid #7d756d;
+        color: #7d756d;
+    }
+
+    .inv-low {
+        border-top: 3px solid var(--dir-red);
+        color: var(--dir-red);
+    }
+
+    .inv-ok {
+        border-top: 3px solid #1e8449;
+        color: #1e8449;
+    }
+
+    .btn {
+        padding: 10px 18px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid transparent;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary {
+        background: var(--dir-red);
+        color: #fff;
+    }
+
+    .btn-secondary {
+        background: #fff;
+        border-color: var(--dir-border);
+        color: var(--dir-text);
+    }
+
+    .toast {
+        position: fixed;
+        bottom: 32px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: #2c2825;
+        color: #fff;
+        padding: 12px 24px;
+        border-radius: 30px;
+        font-size: 13px;
+        font-weight: 500;
+        z-index: 2000;
+        transition: transform .4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .toast.show {
+        transform: translateX(-50%) translateY(0);
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}Hospital Directory <em>& Sync</em>{% endblock %}
+{% block page_subtitle %}Manage the master directory and synchronize with Kenya Health Data{% endblock %}
+
+{% block header_actions %}
+<div style="display: flex; gap: 10px; align-items: center;">
+    <button class="btn-secondary" id="exportBtn">📊 Export</button>
+    <button class="btn-secondary" id="uploadCSVBtn">📥 Upload CSV</button>
+    <button class="btn-primary" id="syncLocalBtn"
+        style="padding: 10px 20px; border-radius: 8px; font-weight: 600; white-space: nowrap;">🔄 Sync
+        kenya-hospitals.csv</button>
+    <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="directory-container">
+    <!-- Sync Progress -->
+    <div id="syncProgress">
+        <div class="sync-bar-wrap">
+            <div class="sync-bar-fill" id="syncBar"></div>
+        </div>
+        <div id="syncMsg">Ready</div>
+        <div id="syncPct">0%</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-bar">
+        <div class="stat-card">
+            <div class="stat-icon">🏥</div>
+            <div class="stat-details">
+                <div class="stat-label">Total Hospitals</div>
+                <div class="stat-value" id="statTotal">0</div>
+            </div>
+        </div>
+        <div class="stat-card c-green">
+            <div class="stat-icon">✅</div>
+            <div class="stat-details">
+                <div class="stat-label">With Stock</div>
+                <div class="stat-value" id="statWithStock">0</div>
+            </div>
+        </div>
+        <div class="stat-card c-red">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-details">
+                <div class="stat-label">Critical (<10 U)</div>
+                        <div class="stat-value" id="statCritical">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <div class="search-wrap">
+                <span class="si">🔍</span>
+                <input type="text" id="search" placeholder="Search name, county, code, phone...">
+            </div>
+
+            <select id="filterBlood">
+                <option value="all">All Blood Types</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+            </select>
+
+            <select id="filterVerified">
+                <option value="all">All Facilities</option>
+                <option value="verified">Verified Only</option>
+                <option value="unverified">Unverified Only</option>
+            </select>
+
+            <div class="result-count" id="resultCount">0 hospitals</div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-container">
+            <table class="main-table">
+                <thead>
+                    <tr>
+                        <th>Hospital</th>
+                        <th>Location</th>
+                        <th>Contact</th>
+                        <th>Blood in Stock</th>
+                        <th>Total Units</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div class="dir-modal-overlay" id="detailModal">
+        <div class="dir-modal-card">
+            <div class="dir-modal-head">
+                <div>
+                    <h2 id="detailTitle">Hospital Details</h2>
+                    <p id="detailSubtitle" style="font-size: 13px; color: var(--dir-text-muted);">Facility Overview</p>
+                </div>
+                <button class="close-x" onclick="closeDirModal()">&times;</button>
+            </div>
+            <div class="dir-modal-body">
+                <div class="inv-grid" id="detailInvGrid"></div>
+                <div id="detailContact"
+                    style="background:#fff; border:1px solid var(--dir-border); border-radius:8px; padding:20px; font-size:13px;">
+                </div>
+            </div>
+            <div class="dir-modal-foot">
+                <button class="btn btn-primary" id="editInventoryBtn" onclick="editInventory()"
+                    style="display: flex; align-items: center; gap: 8px;">✏️ Edit Inventory</button>
+                <button class="btn btn-primary" id="saveInventoryBtn" onclick="saveInventory()"
+                    style="display: none; background: #1e8449; border-color: #1e8449; align-items: center; gap: 8px;">💾
+                    Save Changes</button>
+                <button class="btn btn-secondary" onclick="closeDirModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+    {% endblock %}
+
+    {% block scripts %}
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getDatabase, ref, get, update, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBmbgEyTbdFFFwpxaLYdX3rRwvoWSL1wQ0",
+            authDomain: "bloodlink-app-b9297.firebaseapp.com",
+            databaseURL: "https://bloodlink-app-b9297-default-rtdb.firebaseio.com",
+            projectId: "bloodlink-app-b9297",
+            storageBucket: "bloodlink-app-b9297.firebasestorage.app",
+            messagingSenderId: "492859346824",
+            appId: "1:492859346824:web:77dea9c3e8c6eb1376f43d",
+            measurementId: "G-B55EDLVHF2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const rtdb = getDatabase(app);
+
+        const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+        let allBanks = {};
+        let banksArray = [];
+        let syncInProgress = false;
+
+        // Live subscription
+        onValue(ref(rtdb, "bloodBanks"), snap => {
+            allBanks = snap.exists() ? snap.val() : {};
+            banksArray = Object.entries(allBanks).map(([id, b]) => ({ id, ...b }));
+            updateStats();
+            applyFilters();
+
+            // Finalize loading
+            if (window.loadingScreen) {
+                window.loadingScreen.hide();
+            }
+        });
+
+        function updateStats() {
+            const withStock = banksArray.filter(b => Object.values(b.inventory || {}).some(v => (v?.units || 0) > 0));
+            const critical = banksArray.filter(b => Object.values(b.inventory || {}).reduce((s, v) => s + (v?.units || 0), 0) < 10);
+            document.getElementById("statTotal").textContent = banksArray.length;
+            document.getElementById("statWithStock").textContent = withStock.length;
+            document.getElementById("statCritical").textContent = critical.length;
+        }
+
+        function applyFilters() {
+            const s = document.getElementById("search").value.toLowerCase();
+            const f = document.getElementById("filterBlood").value;
+            const v = document.getElementById("filterVerified").value;
+
+            const rows = banksArray.filter(b => {
+                if (f !== "all" && (b.inventory?.[f]?.units || 0) === 0) return false;
+                if (v === "verified" && !b.isVerified) return false;
+                if (v === "unverified" && b.isVerified) return false;
+                if (s) {
+                    const hay = [b.name, b.address, b.county, b.code].join(" ").toLowerCase();
+                    if (!hay.includes(s)) return false;
+                }
+                return true;
+            });
+
+            document.getElementById("resultCount").textContent = `${rows.length} hospital${rows.length !== 1 ? "s" : ""}`;
+            renderTable(rows);
+        }
+
+        function renderTable(rows) {
+            const tbody = document.getElementById("tableBody");
+            tbody.innerHTML = rows.map(b => {
+                const inv = b.inventory || {};
+                const total = Object.values(inv).reduce((s, v) => s + (v?.units || 0), 0);
+                const avail = BLOOD_TYPES.filter(t => (inv[t]?.units || 0) > 0);
+                const stockClass = total === 0 ? "stock-out" : total < 10 ? "stock-low" : "stock-ok";
+
+                return `
+                <tr>
+                    <td>
+                        <div class="cell-main-row">
+                            <div class="bank-avatar">🏥</div>
+                            <div>
+                                <div class="bank-name">${b.name || "—"}${b.code ? `<span class="bank-code">#${b.code}</span>` : ""}</div>
+                                <div class="bank-sub">${b.isVerified ? '<span class="ver-badge ver-yes">✓ Verified</span>' : '<span class="ver-badge ver-no">○ Unverified</span>'}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="loc-text">${b.county || b.address || "—"}</span></td>
+                    <td><div class="contact-stack"><span>${b.phoneNumber || "—"}</span><span style="font-size: 11px; color: var(--dir-text-muted); word-break: break-all;">${b.email || "—"}</span></div></td>
+                    <td><div class="types-wrap">${avail.length ? avail.slice(0, 5).map(t => `<span class="bt-chip">${t}</span>`).join("") + (avail.length > 5 ? `<span class="bt-extra">+${avail.length - 5}</span>` : "") : '<span class="no-stock">None in stock</span>'}</div></td>
+                    <td><div class="units-cell ${stockClass}"><span class="units-num">${total}</span><span class="units-label">units</span></div></td>
+                    <td>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn-detail" onclick="openDirDetail('${b.id}')">📊 Details</button>
+                            <a href="/hospital/referrals/new?targetFacility=${b.id}&facilityName=${encodeURIComponent(b.name)}" class="btn-detail btn-refer" style="background: #f39c12; color: white; border-color: #e67e22; text-decoration: none; display: flex; align-items: center; justify-content: center;">🔗 Refer</a>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join("");
+        }
+
+        let currentBankId = null;
+
+        window.openDirDetail = function (id) {
+            currentBankId = id;
+            const b = banksArray.find(x => x.id === id);
+            if (!b) return;
+            const inv = b.inventory || {};
+            document.getElementById("detailTitle").textContent = b.name;
+            document.getElementById("detailSubtitle").textContent = `${b.county || ""} ${b.code ? "#" + b.code : ""}`;
+
+            updateDetailInvGrid(inv, false);
+
+            document.getElementById("detailContact").innerHTML = `<p>📞 ${b.phoneNumber || "N/A"}</p><p>📧 ${b.email || "N/A"}</p><p>📍 ${b.address || "N/A"}</p>`;
+            document.getElementById("editInventoryBtn").style.display = "inline-flex";
+            document.getElementById("saveInventoryBtn").style.display = "none";
+            document.getElementById("detailModal").classList.add("open");
+        };
+
+        function updateDetailInvGrid(inv, isEditing) {
+            document.getElementById("detailInvGrid").innerHTML = BLOOD_TYPES.map(t => {
+                const u = inv[t]?.units || 0;
+                if (isEditing) {
+                    return `
+                        <div class="inv-card inv-edit" style="background: #fff; border-color: var(--dir-red);">
+                            <div class="inv-type">${t}</div>
+                            <input type="number" class="inv-input" data-type="${t}" value="${u}" 
+                                style="width: 100%; border: 1px solid var(--dir-border); border-radius: 4px; padding: 4px; text-align: center; font-family: 'DM Mono', monospace;">
+                        </div>`;
+                }
+                const cls = u === 0 ? "inv-out" : u < 20 ? "inv-low" : "inv-ok";
+                return `<div class="inv-card ${cls}"><div class="inv-type">${t}</div><div class="inv-units">${u}</div><div class="inv-status">${u === 0 ? "OUT" : u < 20 ? "LOW" : "OK"}</div></div>`;
+            }).join("");
+        }
+
+        window.editInventory = function () {
+            const b = banksArray.find(x => x.id === currentBankId);
+            if (!b) return;
+            updateDetailInvGrid(b.inventory || {}, true);
+            document.getElementById("editInventoryBtn").style.display = "none";
+            document.getElementById("saveInventoryBtn").style.display = "inline-flex";
+        };
+
+        window.saveInventory = async function () {
+            if (!currentBankId) return;
+            const inputs = document.querySelectorAll('.inv-input');
+            const newInv = {};
+            const now = new Date().toISOString();
+
+            inputs.forEach(input => {
+                const type = input.dataset.type;
+                const units = parseInt(input.value) || 0;
+                newInv[type] = { units, lastUpdated: now };
+            });
+
+            try {
+                await update(ref(rtdb, `bloodBanks/${currentBankId}/inventory`), newInv);
+                toast("Inventory updated successfully");
+
+                // If it's a registered hospital, update Firestore too
+                const b = banksArray.find(x => x.id === currentBankId);
+                if (b && b.email) {
+                    // Logic to update Firestore via an API or custom function if needed
+                    // For now, RTDB is the master for this directory
+                }
+
+                window.openDirDetail(currentBankId);
+            } catch (e) {
+                toast("Update failed: " + e.message, "error");
+            }
+        };
+
+        window.closeDirModal = () => {
+            currentBankId = null;
+            document.getElementById("detailModal").classList.remove("open");
+        };
+
+        // Sync Logic
+        async function syncCSV() {
+            if (syncInProgress) return;
+            try {
+                showProgress(true, "Fetching...", 0);
+                const r = await fetch("/static/kenya-hospitals.csv");
+                const t = await r.text();
+                await processSync(t);
+            } catch (e) { toast(e.message, "error"); showProgress(false); }
+        }
+
+        async function processSync(text) {
+            syncInProgress = true;
+            const lines = text.split(/\r?\n/);
+            const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+            const rows = lines.slice(1).map(l => {
+                const v = l.split(",");
+                const o = {}; headers.forEach((h, i) => o[h] = v[i]?.trim());
+                return o;
+            }).filter(r => (r["operation status"] || "").toLowerCase() === "operational");
+
+            if (!confirm(`Sync ${rows.length} hospitals?`)) { syncInProgress = false; return; }
+
+            for (let i = 0; i < rows.length; i++) {
+                showProgress(true, `Syncing ${i + 1}/${rows.length}`, Math.round(((i + 1) / rows.length) * 100));
+                const row = rows[i];
+                const name = row.name || row.officialname;
+                const data = { name, code: row.code, county: row.county, isVerified: true, updatedAt: new Date().toISOString() };
+                const exId = Object.keys(allBanks).find(id => allBanks[id].code === row.code || allBanks[id].name === name);
+                if (exId) await update(ref(rtdb, `bloodBanks/${exId}`), data);
+                else {
+                    data.inventory = {};
+                    BLOOD_TYPES.forEach(t => data.inventory[t] = { units: 0, lastUpdated: new Date().toISOString() });
+                    await push(ref(rtdb, "bloodBanks"), data);
+                }
+            }
+            showProgress(false); syncInProgress = false; toast("Sync success");
+        }
+
+        function showProgress(s, m, p) {
+            if (s) { document.getElementById("syncMsg").textContent = m; document.getElementById("syncBar").style.width = p + "%"; document.getElementById("syncPct").textContent = p + "%"; }
+        }
+        function toast(m, t = "success") { const el = document.getElementById("toast"); el.textContent = m; el.className = `toast show toast-${t}`; setTimeout(() => el.classList.remove("show"), 4000); }
+
+        document.getElementById("syncLocalBtn").onclick = syncCSV;
+        document.getElementById("uploadCSVBtn").onclick = () => document.getElementById("csvFileInput").click();
+        document.getElementById("csvFileInput").onchange = e => {
+            const f = e.target.files[0]; if (!f) return;
+            const r = new FileReader(); r.onload = ev => processSync(ev.target.result); r.readAsText(f);
+        };
+        document.getElementById("exportBtn").onclick = () => {
+            const csv = "Name,Code,Units\n" + banksArray.map(b => `"${b.name}","${b.code}",${Object.values(b.inventory || {}).reduce((s, v) => s + (v.units || 0), 0)}`).join("\n");
+            const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = "hospitals.csv"; a.click();
+        };
+
+        // Filters
+        ["search", "filterBlood", "filterVerified"].forEach(id => {
+            document.getElementById(id).oninput = applyFilters;
+            document.getElementById(id).onchange = applyFilters;
+        });
+    </script>
+    {% endblock %}

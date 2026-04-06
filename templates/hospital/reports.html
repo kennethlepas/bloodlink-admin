@@ -1,0 +1,306 @@
+{% extends "hospital/base.html" %}
+
+{% block body_class %}notification-theme-view{% endblock %}
+
+{% block title %}Facility Reports - BloodLink{% endblock %}
+{% block page_title %}Facility Reports{% endblock %}
+{% block page_subtitle %}Analyze your facility's blood banking activity{% endblock %}
+
+{% block header_actions %}
+<div class="header-actions">
+    <button class="btn-primary" id="exportAllReports" onclick="exportAllReports()">
+        <span>📊</span>
+        <span>Export All</span>
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="reports-container">
+    <!-- Report Type Tabs -->
+    <div class="report-tabs">
+        <button class="report-tab active" data-tab="inventory">
+            <span class="tab-icon">🏥</span>
+            <span class="tab-label">Inventory Report</span>
+        </button>
+        <button class="report-tab" data-tab="requests">
+            <span class="tab-icon">🩸</span>
+            <span class="tab-label">Blood Requests</span>
+        </button>
+        <button class="report-tab" data-tab="bookings">
+            <span class="tab-icon">📅</span>
+            <span class="tab-label">Bookings Report</span>
+        </button>
+        <button class="report-tab" data-tab="referrals">
+            <span class="tab-icon">🔗</span>
+            <span class="tab-label">Referrals Report</span>
+        </button>
+        <button class="report-tab" data-tab="chats">
+            <span class="tab-icon">💬</span>
+            <span class="tab-label">Chat Activity</span>
+        </button>
+        <button class="report-tab" data-tab="analytics">
+            <span class="tab-icon">📈</span>
+            <span class="tab-label">Analytics</span>
+        </button>
+    </div>
+
+    <!-- Inventory Report Tab -->
+    <div id="inventoryTab" class="report-tab-content active">
+        <div class="report-card">
+            <div class="report-header">
+                <div class="report-icon" style="background: linear-gradient(135deg, #FFF7ED, #FEF3C7); color: #EA580C;">
+                    <span>🏥</span>
+                </div>
+                <div class="report-info">
+                    <h3>Blood Inventory Report</h3>
+                    <p>Current stock levels and history for your facility</p>
+                </div>
+            </div>
+
+            <div class="report-actions" style="margin-top: 20px;">
+                <button class="btn-primary" onclick="generateInventoryReport()">
+                    <span>📄</span> Generate PDF
+                </button>
+                <button class="btn-secondary" onclick="exportInventoryExcel()">
+                    <span>📊</span> Export to Excel
+                </button>
+                <button class="btn-secondary" onclick="previewInventoryReport()">
+                    <span>👁️</span> Preview
+                </button>
+            </div>
+
+            <div id="inventoryPreview" class="report-preview" style="display: none; margin-top: 20px;">
+                <div class="preview-header">
+                    <h4>📋 Report Preview</h4>
+                    <button class="close-preview" onclick="closePreview('inventory')">✕</button>
+                </div>
+                <div id="inventoryPreviewContent" class="preview-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Blood Requests Report Tab -->
+    <div id="requestsTab" class="report-tab-content">
+        <div class="report-card">
+            <div class="report-header">
+                <div class="report-icon" style="background: linear-gradient(135deg, #FEF2F2, #FEE2E2); color: #DC2626;">
+                    <span>🩸</span>
+                </div>
+                <div class="report-info">
+                    <h3>Blood Requests History</h3>
+                    <p>Analytics of all requests made by your facility</p>
+                </div>
+            </div>
+
+            <div class="report-filters" style="margin-top: 20px;">
+                <div class="filter-group">
+                    <div class="filter-item">
+                        <label>📅 Date Range</label>
+                        <select id="requestDateRange" class="filter-select">
+                            <option value="all">All Time</option>
+                            <option value="week">Last 7 Days</option>
+                            <option value="month">Last 30 Days</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="report-actions" style="margin-top: 20px;">
+                <button class="btn-primary" onclick="generateRequestsReport()">
+                    <span>📄</span> Generate PDF
+                </button>
+                <button class="btn-secondary" onclick="exportRequestsExcel()">
+                    <span>📊</span> Export to Excel
+                </button>
+                <button class="btn-secondary" onclick="previewRequestsReport()">
+                    <span>👁️</span> Preview
+                </button>
+            </div>
+
+            <div id="requestsPreview" class="report-preview" style="display: none; margin-top: 20px;">
+                <div class="preview-header">
+                    <h4>📋 Report Preview</h4>
+                    <button class="close-preview" onclick="closePreview('requests')">✕</button>
+                </div>
+                <div id="requestsPreviewContent" class="preview-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bookings Report Tab -->
+    <div id="bookingsTab" class="report-tab-content">
+        <div class="report-card">
+            <div class="report-header">
+                <div class="report-icon" style="background: linear-gradient(135deg, #FDF2F8, #FCE7F3); color: #DB2777;">
+                    <span>📅</span>
+                </div>
+                <div class="report-info">
+                    <h3>Transfusion & Donation Bookings</h3>
+                    <p>Track your facility's scheduled transfusion sessions and incoming donations</p>
+                </div>
+            </div>
+
+            <div class="report-filters" style="margin-top: 20px;">
+                <div class="filter-group">
+                    <div class="filter-item">
+                        <label>📅 Date Range</label>
+                        <select id="bookingDateRange" class="filter-select">
+                            <option value="all">All Time</option>
+                            <option value="today">Today</option>
+                            <option value="week">Last 7 Days</option>
+                            <option value="month">Last 30 Days</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label>📊 Booking Type</label>
+                        <select id="bookingType" class="filter-select">
+                            <option value="all">All Types</option>
+                            <option value="donation">Donations</option>
+                            <option value="transfusion">Transfusions</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="report-actions" style="margin-top: 20px;">
+                <button class="btn-primary" onclick="generateBookingsReport()">
+                    <span>📄</span> Generate PDF
+                </button>
+                <button class="btn-secondary" onclick="exportBookingsExcel()">
+                    <span>📊</span> Export to Excel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Referrals Report Tab -->
+    <div id="referralsTab" class="report-tab-content">
+        <div class="report-card">
+            <div class="report-header">
+                <div class="report-icon" style="background: linear-gradient(135deg, #FFF7ED, #FFEDD5); color: #EA580C;">
+                    <span>🔗</span>
+                </div>
+                <div class="report-info">
+                    <h3>Hospital Referrals Report</h3>
+                    <p>Analyze patient referrals sent from or received by your facility</p>
+                </div>
+            </div>
+
+            <div class="report-filters" style="margin-top: 20px;">
+                <div class="filter-group">
+                    <div class="filter-item">
+                        <label>📅 Date Range</label>
+                        <select id="referralDateRange" class="filter-select">
+                            <option value="all">All Time</option>
+                            <option value="month">Last 30 Days</option>
+                            <option value="quarter">Last 3 Months</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="report-actions" style="margin-top: 20px;">
+                <button class="btn-primary" onclick="generateReferralsReport()">
+                    <span>📄</span> Generate PDF
+                </button>
+                <button class="btn-secondary" onclick="exportReferralsExcel()">
+                    <span>📊</span> Export to Excel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Activity Report Tab -->
+    <div id="chatsTab" class="report-tab-content">
+        <div class="report-card">
+            <div class="report-header">
+                <div class="report-icon" style="background: linear-gradient(135deg, #F5F3FF, #EDE9FE); color: #7C3AED;">
+                    <span>💬</span>
+                </div>
+                <div class="report-info">
+                    <h3>Facility Chat Activity</h3>
+                    <p>Monitor communication frequency with other hospitals and administrators</p>
+                </div>
+            </div>
+
+            <div class="report-filters" style="margin-top: 20px;">
+                <div class="filter-group">
+                    <div class="filter-item">
+                        <label>📅 Date Range</label>
+                        <select id="chatDateRange" class="filter-select">
+                            <option value="all">All Time</option>
+                            <option value="week">Last 7 Days</option>
+                            <option value="month">Last 30 Days</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="report-actions" style="margin-top: 20px;">
+                <button class="btn-primary" onclick="generateChatsReport()">
+                    <span>📄</span> Generate PDF
+                </button>
+                <button class="btn-secondary" onclick="exportChatsExcel()">
+                    <span>📊</span> Export to Excel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Dashboard Tab -->
+    <div id="analyticsTab" class="report-tab-content">
+        <div class="analytics-dashboard">
+            <div class="analytics-grid">
+                <div class="analytics-card">
+                    <div class="analytics-icon">🩸</div>
+                    <div class="analytics-info">
+                        <h4>Total Requests</h4>
+                        <div class="metric-value" id="totalRequestsMetric">0</div>
+                    </div>
+                </div>
+                <div class="analytics-card">
+                    <div class="analytics-icon">✅</div>
+                    <div class="analytics-info">
+                        <h4>Completion Rate</h4>
+                        <div class="metric-value" id="completionRateMetric">0%</div>
+                    </div>
+                </div>
+                <div class="analytics-card">
+                    <div class="analytics-icon">📅</div>
+                    <div class="analytics-info">
+                        <h4>Total Bookings</h4>
+                        <div class="metric-value" id="totalBookingsMetric">0</div>
+                    </div>
+                </div>
+                <div class="analytics-card">
+                    <div class="analytics-icon">🔗</div>
+                    <div class="analytics-info">
+                        <h4>Referrals Activity</h4>
+                        <div class="metric-value" id="referralsMetric">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="charts-container" style="margin-top: 24px;">
+                <div class="chart-card">
+                    <h4>Requests Status Distribution</h4>
+                    <canvas id="urgencyChart" width="400" height="300"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h4>Booking Type Distribution</h4>
+                    <canvas id="bookingTypeChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<script src="{{ url_for('static', filename='hospital/reports.js') }}"></script>
+{% endblock %}

@@ -14,68 +14,165 @@
     {% block extra_head %}{% endblock %}
 </head>
 
-<body>
-    <!-- Loading Screen -->
-    <div id="loading" class="loading-container">
-        <div class="spinner"></div>
-        <p>Loading...</p>
-    </div>
+<body class="{% block body_class %}{% endblock %}">
+    <!-- Top Progress Bar (Minimal navigation indicator) -->
+    <div class="page-transition-loading" id="pageLoadingBar"></div>
 
     <!-- Admin Dashboard Layout -->
-    <div id="adminDashboard" class="admin-dashboard hidden">
+    <div id="adminDashboard" class="admin-dashboard">
         <!-- Sidebar Navigation -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="BloodLink Logo" class="logo-image">
-                <div class="sidebar-branding">
-                    <h1 class="sidebar-title">BloodLink</h1>
-                    <p class="sidebar-tagline">We Save Lives</p>
+                <div class="logo-wrapper">
+                    <div class="logo-box" style="border-radius: 8px;">
+                        <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="BloodLink Logo"
+                            class="logo-image-square">
+                    </div>
                 </div>
+                <div class="sidebar-branding">
+                    <h1 class="sidebar-title" style="font-size: 18px; letter-spacing: -0.5px;">BloodLink</h1>
+                    <p class="sidebar-tagline">Super Admin Portal</p>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle Sidebar">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
             </div>
 
             <nav class="sidebar-nav">
-                <a href="/dashboard" class="nav-item {% if request.path == '/dashboard' %}active{% endif %}">
-                    <span class="nav-icon">📊</span>
+                <a href="/dashboard" class="nav-item {% if request.path == '/dashboard' %}active{% endif %}"
+                    data-screen="dashboard" data-roles="super_admin, hospital_admin">
+                    <span class="nav-icon">🏠</span>
                     <span class="nav-label">Dashboard</span>
                 </a>
-                <a href="/blood-banks" class="nav-item {% if request.path == '/blood-banks' %}active{% endif %}">
-                    <span class="nav-icon">🏥</span>
-                    <span class="nav-label">Blood Banks</span>
-                </a>
-                <a href="/donors" class="nav-item {% if request.path == '/donors' %}active{% endif %}">
-                    <span class="nav-icon">👥</span>
-                    <span class="nav-label">Donors</span>
-                </a>
-                <a href="/requests" class="nav-item {% if request.path == '/requests' %}active{% endif %}">
+                <a href="/requests" class="nav-item {% if request.path == '/requests' %}active{% endif %}"
+                    data-screen="requests" data-roles="super_admin, hospital_admin">
                     <span class="nav-icon">📋</span>
                     <span class="nav-label">Blood Requests</span>
                 </a>
-                <a href="/reviews" class="nav-item {% if request.path == '/reviews' %}active{% endif %}">
+                <a href="/bookings" class="nav-item {% if request.path == '/bookings' %}active{% endif %}"
+                    data-screen="bookings" data-roles="super_admin">
+                    <span class="nav-icon">📅</span>
+                    <span class="nav-label">Bookings</span>
+                </a>
+                <a href="/hospital/bookings"
+                    class="nav-item {% if request.path == '/hospital/bookings' %}active{% endif %}"
+                    data-screen="bookings" data-roles="hospital_admin">
+                    <span class="nav-icon">📅</span>
+                    <span class="nav-label">Bookings</span>
+                </a>
+                <a href="/donors" class="nav-item {% if request.path == '/donors' %}active{% endif %}"
+                    data-screen="donors" data-roles="super_admin">
+                    <span class="nav-icon">👤</span>
+                    <span class="nav-label">Donors</span>
+                </a>
+                <a href="/referrals" class="nav-item {% if request.path == '/referrals' %}active{% endif %}"
+                    data-screen="referrals" data-roles="super_admin, hospital_admin">
+                    <span class="nav-icon">🔗</span>
+                    <span class="nav-label">Referrals</span>
+                </a>
+                <a href="/blood-banks" class="nav-item {% if request.path == '/blood-banks' %}active{% endif %}"
+                    data-screen="bloodbanks" data-roles="super_admin">
+                    <span class="nav-icon">🏥</span>
+                    <span class="nav-label">Blood Banks</span>
+                </a>
+                <a href="/reports" class="nav-item {% if request.path == '/reports' %}active{% endif %}"
+                    data-screen="reports" data-roles="super_admin, hospital_admin">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Reports</span>
+                </a>
+                <a href="/notifications" class="nav-item {% if request.path == '/notifications' %}active{% endif %}"
+                    data-screen="notifications" data-roles="super_admin, hospital_admin">
+                    <span class="nav-icon">🔔</span>
+                    <span class="nav-label">Notifications</span>
+                    <span class="nav-badge hidden" id="notificationBadge">0</span>
+                </a>
+                <a href="/users" class="nav-item {% if request.path == '/users' %}active{% endif %}" data-screen="users"
+                    data-roles="super_admin">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-label">Users</span>
+                </a>
+                <a href="/verifications" class="nav-item {% if request.path == '/verifications' %}active{% endif %}"
+                    data-screen="verifications" data-roles="super_admin">
+                    <span class="nav-icon">🛡️</span>
+                    <span class="nav-label">Verifications</span>
+                    <span class="nav-badge hidden" id="verificationBadge">0</span>
+                </a>
+                <a href="/reviews" class="nav-item {% if request.path == '/reviews' %}active{% endif %}"
+                    data-screen="reviews" data-roles="super_admin">
                     <span class="nav-icon">⭐</span>
                     <span class="nav-label">Reviews</span>
                 </a>
+                <a href="/chat" class="nav-item {% if request.path == '/chat' %}active{% endif %}" data-screen="chat"
+                    data-roles="super_admin">
+                    <span class="nav-icon">💬</span>
+                    <span class="nav-label">Chat</span>
+                </a>
+                <a href="/tickets" class="nav-item {% if request.path == '/tickets' %}active{% endif %}"
+                    data-screen="tickets" data-roles="super_admin">
+                    <span class="nav-icon">🎫</span>
+                    <span class="nav-label">Support Tickets</span>
+                    <span class="nav-badge hidden" id="ticketBadge">0</span>
+                </a>
+
+                <a href="/system-config" class="nav-item {% if request.path == '/system-config' %}active{% endif %}"
+                    data-screen="system-config" data-roles="super_admin">
+                    <span class="nav-icon">🛠️</span>
+                    <span class="nav-label">System Config</span>
+                </a>
+
+                <a href="/settings" class="nav-item {% if request.path == '/settings' %}active{% endif %}"
+                    data-screen="settings" data-roles="super_admin">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Settings</span>
+                </a>
+                <a href="/policies" class="nav-item {% if request.path == '/policies' %}active{% endif %}"
+                    data-screen="policies" data-roles="super_admin, hospital_admin">
+                    <span class="nav-icon">⚖️</span>
+                    <span class="nav-label">Policies</span>
+                </a>
+                <a href="/system-logs" class="nav-item {% if request.path == '/system-logs' %}active{% endif %}"
+                    data-screen="system-logs" data-roles="super_admin">
+                    <span class="nav-icon">📜</span>
+                    <span class="nav-label">System Logs</span>
+                </a>
             </nav>
 
-            <div class="sidebar-footer">
+            <div class="sidebar-footer" style="padding: 20px; border-top: 1px solid var(--gray-200);">
                 <div class="user-profile">
-                    <div class="user-avatar">👤</div>
-                    <div class="user-details">
-                        <div class="user-name" id="userName">Admin</div>
-                        <div class="user-email" id="userEmail">admin@bloodlink.com</div>
+                    <div class="user-avatar"
+                        style="background: var(--primary); color: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;">
+                        SA</div>
+                    <div class="user-details" style="margin-left: 10px;">
+                        <div class="user-name" id="userName"
+                            style="font-weight: 600; color: var(--text-primary); font-size: 13px;">BloodLink HQ</div>
+                        <div class="user-email" id="userEmail" style="font-size: 11px; color: var(--text-secondary);">
+                            admin@bloodlink.com</div>
                     </div>
                 </div>
-                <button class="logout-btn" id="logoutBtn">
-                    <span>🚪</span>
-                    <span>Logout</span>
-                </button>
+                <div class="sidebar-footer-actions"
+                    style="display: flex; flex-direction: column; gap: 8px; margin-top: 16px;">
+                    <button class="footer-action-btn" id="logoutBtn" title="Logout"
+                        style="width: 100%; background: rgba(197, 40, 61, 0.1); border: none; color: #C5283D; padding: 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; font-weight: 600; transition: all 0.2s;">
+                        <span>🚪</span>
+                        <span>Logout</span>
+                    </button>
+                    <button class="footer-action-btn" id="resetPasswordBtn" title="Reset Password"
+                        style="width: 100%; background: transparent; border: 1px solid var(--gray-200); color: var(--text-secondary); padding: 8px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px;">
+                        <span>🔑</span>
+                        <span>Reset Password</span>
+                    </button>
+                </div>
             </div>
         </aside>
 
         <!-- Main Content Area -->
         <main class="main-container">
             <!-- Header -->
-            <header class="page-header">
-                <div class="header-content">
+            <header class="page-header"
+                style="background: white; border-bottom: 1px solid var(--gray-200); height: 72px;">
+                <div class="header-content" style="height: 100%;">
                     <div class="header-left">
                         <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle Menu">
                             <span></span>
@@ -83,15 +180,34 @@
                             <span></span>
                         </button>
                         <div class="header-info">
-                            <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
-                            <p class="page-subtitle">{% block page_subtitle %}Overview of blood bank operations{%
-                                endblock %}</p>
+                            <h1 class="page-title" style="font-size: 22px; font-weight: 600;">{% block page_title
+                                %}Dashboard{% endblock %}</h1>
+                            <p class="page-subtitle">{% block page_subtitle %}Overview of BloodLink platform
+                                operations{% endblock %}</p>
                         </div>
                     </div>
-                    <div class="header-actions">
-                        {% block header_actions %}{% endblock %}
+                    <div class="header-right" style="display: flex; align-items: center; gap: 20px;">
+                        <div class="header-facility-info"
+                            style="text-align: right; display: none; @media (min-width: 768px) { display: block; }">
+                            <div style="font-weight: 600; font-size: 14px; color: var(--text-primary);">BloodLink
+                                Headquarters</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">admin@bloodlink.com</div>
+                        </div>
+                        <div class="user-avatar"
+                            style="width: 40px; height: 40px; background: #2563EB; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">
+                            SA</div>
+                        <button id="headerLogoutBtn" title="Logout"
+                            style="background: transparent; border: none; cursor: pointer; font-size: 20px;">🚪</button>
                     </div>
                 </div>
+            </header>
+            <!-- Custom Suggestion Banner -->
+            <div id="suggestionBanner" class="suggestion-banner" style="display: none;">
+                <div class="suggestion-content">
+                    <span class="suggestion-icon">💡</span>
+                    <span class="suggestion-text" id="suggestionText"></span>
+                </div>
+            </div>
             </header>
 
             <!-- Page Content -->
@@ -102,47 +218,360 @@
     </div>
 
     <!-- Shared Modals -->
+    <!-- Verification Detail Modal -->
+    <div id="verificationModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Verification Details</h3>
+                <button class="modal-close" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="verificationDetails" class="details-grid">
+                    <!-- Populated by JavaScript -->
+                </div>
+
+                <div class="document-preview-section">
+                    <h4>Submitted Documents</h4>
+                    <div id="documentPreviews" class="document-grid">
+                        <!-- Images/Links -->
+                    </div>
+                </div>
+
+                <div class="action-form">
+                    <div class="form-group">
+                        <label for="adminNotes">Admin Notes (visible to user)</label>
+                        <textarea id="adminNotes" placeholder="Enter reason for approval or rejection..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="action-btn" id="rejectBtn"
+                    style="background: var(--danger); color: white;">Reject</button>
+                <button class="action-btn action-btn-primary" id="approveBtn">Approve</button>
+            </div>
+        </div>
+    </div>
+    <!-- Image Preview Overlay -->
+    <div id="imageOverlay" class="image-overlay hidden">
+        <div class="overlay-content">
+            <span class="close-overlay" id="closeImageOverlay">&times;</span>
+            <img id="overlayImage" src="" alt="Document Preview">
+            <div id="overlayCaption" class="overlay-caption"></div>
+            <a id="overlayOriginalBtn" href="#" target="_blank" class="view-original-btn">Open Original ↗</a>
+        </div>
+    </div>
+
     {% block modals %}{% endblock %}
 
     <!-- Firebase Config -->
     <script src="{{ url_for('static', filename='firebase-config.js') }}"></script>
-    <!-- Authentication -->
-    <script src="{{ url_for('static', filename='auth.js') }}"></script>
+    <script src="{{ url_for('static', filename='cloudinary-config.js') }}"></script>
     <!-- Utilities -->
     <script src="{{ url_for('static', filename='utils.js') }}"></script>
+    <!-- Authentication -->
+    <script src="{{ url_for('static', filename='auth.js') }}"></script>
+    <script src="{{ url_for('static', filename='sidebar.js') }}"></script>
+    <!-- Shared Verification Logic -->
+    <script src="{{ url_for('static', filename='verification-shared.js') }}"></script>
+    <!-- Global Counters -->
+    <script src="{{ url_for('static', filename='global-counters.js') }}"></script>
 
-    <!-- Mobile Menu Toggle -->
+    <!-- PDF Generation Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- Screen Suggestions Data -->
+    <script>
+        // Screen-specific suggestions and tips
+        const screenSuggestions = {
+            dashboard: {
+                icon: "📊",
+                title: "Welcome to BloodLink Admin Dashboard",
+                tips: [
+                    "Monitor blood inventory levels across all registered blood banks",
+                    "Track donor registration trends and verification requests",
+                    "Review key metrics to understand platform health",
+                    "Use quick actions to navigate to frequently used features"
+                ],
+                suggestion: "Start by reviewing the blood type availability to ensure adequate supply across all regions."
+            },
+            notifications: {
+                icon: "🔔",
+                title: "Notifications Center",
+                tips: [
+                    "Stay updated on verification requests and donor activities",
+                    "Mark notifications as read after reviewing them",
+                    "Click on notifications to take immediate action",
+                    "Unread notifications are highlighted for your attention"
+                ],
+                suggestion: "You have pending notifications waiting for your attention. Review them to stay updated on platform activities."
+            },
+            users: {
+                icon: "👥",
+                title: "User Management",
+                tips: [
+                    "Manage donor and requester accounts from a single interface",
+                    "Toggle user status to activate or revoke access",
+                    "Delete user accounts when necessary (this removes all associated data)",
+                    "Search and filter users by role, status, and registration date"
+                ],
+                suggestion: "Regularly review user accounts to ensure only active and verified users have access to the platform."
+            },
+            verifications: {
+                icon: "🛡️",
+                title: "Verification Requests",
+                tips: [
+                    "Review donor identity documents carefully before approval",
+                    "Check blood request requisition forms for authenticity",
+                    "Provide clear rejection reasons to help users understand decisions",
+                    "Approved donors can accept blood requests, increasing response rates"
+                ],
+                suggestion: "Focus on pending verifications first to help donors start contributing to blood requests."
+            },
+            bloodbanks: {
+                icon: "🏥",
+                title: "Blood Bank Management",
+                tips: [
+                    "Track blood inventory levels by type and hospital",
+                    "Monitor expiring blood batches to reduce wastage",
+                    "Add new blood banks to expand donor reach",
+                    "Sync with Kenya Hospitals CSV to import verified facilities"
+                ],
+                suggestion: "Regularly update inventory levels to help requesters find available blood quickly."
+            },
+            donors: {
+                icon: "👤",
+                title: "Donor Registry",
+                tips: [
+                    "Verify new donor accounts to enable them to accept requests",
+                    "Track donor donation history and impact points",
+                    "Monitor donor availability status to gauge active donors",
+                    "Review rejected donors to reconsider if they update their information"
+                ],
+                suggestion: "You have pending donor verifications. Verify them to increase the pool of available donors."
+            },
+            requests: {
+                icon: "📋",
+                title: "Blood Requests Management",
+                tips: [
+                    "Approve pending blood requests to make them visible to donors",
+                    "Monitor urgent and critical requests for faster response",
+                    "Track request completion rates to measure platform impact",
+                    "Reject requests with clear reasons to help requesters improve"
+                ],
+                suggestion: "Check pending requests and approve them so donors can start responding to urgent needs."
+            },
+            reviews: {
+                icon: "⭐",
+                title: "Review Moderation",
+                tips: [
+                    "Approve positive reviews to build community trust",
+                    "Reject reviews that violate community guidelines",
+                    "Monitor review content for authenticity and relevance",
+                    "Delete inappropriate reviews to maintain platform quality"
+                ],
+                suggestion: "Review pending user feedback to maintain high-quality testimonials for the platform."
+            },
+            reports: {
+                icon: "📊",
+                title: "Reports & Analytics",
+                tips: [
+                    "Generate PDF and Excel reports for offline analysis",
+                    "Filter reports by date range, blood type, and status",
+                    "Use analytics dashboard to track key performance metrics",
+                    "Schedule automated reports for regular updates"
+                ],
+                suggestion: "Generate a donors report to analyze registration trends and donation patterns."
+            },
+            referrals: {
+                icon: "🔗",
+                title: "Hospital Referrals",
+                tips: [
+                    "Refer patients to other hospitals with compatible blood stock",
+                    "Track the status of sent and received referrals",
+                    "Ensure patient data is accurate before sending",
+                    "Contact the target hospital via chat for follow-ups"
+                ],
+                suggestion: "Select a target facility and patient details to initiate a life-saving referral."
+            },
+            chat: {
+                icon: "💬",
+                title: "BloodLink Connect",
+                tips: [
+                    "Securely communicate with other hospital administrators",
+                    "Coordinate urgent blood transfers and referrals",
+                    "Keep conversations professional and donor-focused",
+                    "Check online status to ensure fast responses"
+                ],
+                suggestion: "Use BloodLink Connect to coordinate with other facilities in real-time."
+            },
+            hospital: {
+                icon: "🏥",
+                title: "Hospital Dashboard",
+                tips: [
+                    "Monitor your facility's specific blood requests",
+                    "Track your internal inventory levels",
+                    "Manage referrals and chats from one place",
+                    "Ensure your facility's contact info is up to date"
+                ],
+                suggestion: "Welcome to your hospital admin portal. Review your local stock levels and active requests."
+            }
+        };
+
+        // Function to update suggestion based on current page
+        function updateSuggestionForPage(pageName) {
+            const suggestionBanner = document.getElementById('suggestionBanner');
+            const suggestionText = document.getElementById('suggestionText');
+            const pageSubtitle = document.getElementById('pageSubtitle');
+
+            if (screenSuggestions[pageName]) {
+                const data = screenSuggestions[pageName];
+
+                // Update suggestion text with random tip
+                const randomTip = data.tips[Math.floor(Math.random() * data.tips.length)];
+                suggestionText.innerHTML = `${data.icon} ${data.suggestion}<br><small style="opacity: 0.8; font-size: 12px;">💡 Tip: ${randomTip}</small>`;
+
+                // Add to subtitle if not already customized
+                if (pageSubtitle && !pageSubtitle.hasAttribute('data-custom')) {
+                    pageSubtitle.innerHTML = `${pageSubtitle.innerHTML} • ${data.title}`;
+                    pageSubtitle.setAttribute('data-custom', 'true');
+                }
+
+                suggestionBanner.style.display = 'block';
+
+                // Auto-hide after 8 seconds
+                setTimeout(() => {
+                    suggestionBanner.style.opacity = '0';
+                    setTimeout(() => {
+                        suggestionBanner.style.display = 'none';
+                        suggestionBanner.style.opacity = '1';
+                    }, 500);
+                }, 8000);
+            } else {
+                suggestionBanner.style.display = 'none';
+            }
+        }
+
+        // Detect current page from URL
+        function detectCurrentPage() {
+            const path = window.location.pathname;
+            if (path.includes('/dashboard')) return 'dashboard';
+            if (path.includes('/notifications')) return 'notifications';
+            if (path.includes('/users')) return 'users';
+            if (path.includes('/verifications')) return 'verifications';
+            if (path.includes('/blood-banks')) return 'bloodbanks';
+            if (path.includes('/donors')) return 'donors';
+            if (path.includes('/requests')) return 'requests';
+            if (path.includes('/reviews')) return 'reviews';
+            if (path.includes('/reports')) return 'reports';
+            if (path.includes('/referrals')) return 'referrals';
+            if (path.includes('/chat')) return 'chat';
+            if (path.includes('/hospital')) return 'hospital';
+            return null;
+        }
+
+        // Show suggestion on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            const currentPage = detectCurrentPage();
+            if (currentPage) {
+                setTimeout(() => {
+                    updateSuggestionForPage(currentPage);
+                }, 1500);
+            }
+        });
+    </script>
+
+    <!-- Mobile Menu Toggle with Simple Hide/Show -->
     <script>
         (function () {
             const mobileToggle = document.getElementById('mobileMenuToggle');
-            const sidebar = document.querySelector('.sidebar');
+            const sidebar = document.getElementById('sidebar');
             const mainContainer = document.querySelector('.main-container');
 
             if (mobileToggle && sidebar) {
-                mobileToggle.addEventListener('click', function () {
-                    this.classList.toggle('active');
+                function toggleSidebar() {
                     sidebar.classList.toggle('show');
+                    mobileToggle.classList.toggle('active');
 
-                    // Close sidebar when clicking outside
-                    if (sidebar.classList.contains('show')) {
-                        const closeOnClickOutside = function (e) {
-                            if (!sidebar.contains(e.target) && !mobileToggle.contains(e.target)) {
-                                sidebar.classList.remove('show');
-                                mobileToggle.classList.remove('active');
-                                document.removeEventListener('click', closeOnClickOutside);
-                            }
-                        };
-                        setTimeout(() => {
-                            document.addEventListener('click', closeOnClickOutside);
-                        }, 10);
+                    if (window.innerWidth <= 768) {
+                        if (sidebar.classList.contains('show')) {
+                            document.body.style.overflow = 'hidden';
+                        } else {
+                            document.body.style.overflow = '';
+                        }
+                    }
+                }
+
+                mobileToggle.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    toggleSidebar();
+                });
+
+                document.addEventListener('click', function (e) {
+                    if (window.innerWidth <= 768) {
+                        if (sidebar.classList.contains('show') &&
+                            !sidebar.contains(e.target) &&
+                            !mobileToggle.contains(e.target)) {
+                            toggleSidebar();
+                        }
                     }
                 });
+
+                window.addEventListener('resize', function () {
+                    if (window.innerWidth > 768) {
+                        sidebar.classList.add('show');
+                        document.body.style.overflow = '';
+                    } else {
+                        sidebar.classList.remove('show');
+                        mobileToggle.classList.remove('active');
+                    }
+                });
+
+                if (window.innerWidth > 768) {
+                    sidebar.classList.add('show');
+                    mobileToggle.classList.add('active');
+                }
             }
         })();
     </script>
 
+    <!-- Loading Screen Animation -->
+    <script>
+        (function () {
+            // Loading messages carousel
+            const loadingMessages = [
+                "Connecting to blood donors...",
+                "Loading donor network...",
+                "Checking blood bank inventory...",
+                "Verifying secure connection...",
+                "Preparing dashboard...",
+                "Every drop counts...",
+                "Saving lives, one donation at a time...",
+                "Building community of heroes...",
+                "Almost ready..."
+            ];
+
+            let messageIndex = 0;
+            const loadingMessageEl = document.getElementById('loadingMessage');
+            const loadingStatusEl = document.getElementById('loadingStatus');
+            const loadingProgressFill = document.getElementById('loadingProgressFill');
+
+            if (loadingMessageEl) {
+                // Logic for loading screen...
+            }
+        })();
+    </script>
+
+    <!-- New Modules: Audit Logs, Admin Policies, Page Transitions -->
+    <script src="{{ url_for('static', filename='audit-logs.js') }}"></script>
+    <script src="{{ url_for('static', filename='admin-policies.js') }}"></script>
+    <script src="{{ url_for('static', filename='page-transitions.js') }}"></script>
+
     <!-- Page-specific scripts -->
     {% block scripts %}{% endblock %}
+
+    <!-- Extra scripts block for custom pages -->
+    {% block extra_scripts %}{% endblock %}
 </body>
 
 </html>

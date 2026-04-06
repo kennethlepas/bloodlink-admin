@@ -1,0 +1,735 @@
+{% extends "hospital/base.html" %}
+
+{% block title %}Hospital Directory - BloodLink Admin{% endblock %}
+{% block body_class %}notification-theme-view{% endblock %}
+
+{% block extra_head %}
+<!-- Styles from the premium directory layout -->
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,400&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+    /* Use global .high-contrast-view variables */
+
+    .directory-container {
+        font-family: 'DM Sans', sans-serif;
+        color: var(--dir-text);
+        background: var(--dir-bg);
+        border-radius: 16px;
+        padding: 20px;
+    }
+
+    /* ── Stats ── */
+    .stats-bar {
+        display: flex;
+        gap: 14px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+    }
+
+    .stat-card {
+        background: var(--dir-surface);
+        border: 1px solid var(--dir-border);
+        border-radius: 12px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        min-width: 180px;
+        flex: 1;
+        backdrop-filter: blur(10px);
+    }
+
+    .stat-icon {
+        font-size: 24px;
+    }
+
+    .stat-label {
+        font-size: 11px;
+        color: var(--dir-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 4px;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        line-height: 1;
+        font-family: 'Fraunces', serif;
+    }
+
+    .c-red .stat-value {
+        color: var(--dir-red);
+    }
+
+    .c-green .stat-value {
+        color: #10b981;
+    }
+
+    /* ── Toolbar ── */
+    .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .search-wrap {
+        position: relative;
+        flex: 1;
+        min-width: 300px;
+    }
+
+    .search-wrap .si {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 14px;
+        color: var(--dir-text-muted);
+    }
+
+    .search-wrap input {
+        width: 100%;
+        padding: 12px 16px 12px 42px;
+        background: var(--dir-surface);
+        border: 1px solid var(--dir-border);
+        border-radius: 10px;
+        color: var(--dir-text);
+        font-size: 14px;
+        outline: none;
+        transition: all 0.2s;
+    }
+
+    .search-wrap input:focus {
+        border-color: #ffffff;
+        background: var(--dir-surface2);
+    }
+
+    select {
+        padding: 12px 16px;
+        background: var(--dir-surface);
+        border: 1px solid var(--dir-border);
+        border-radius: 10px;
+        color: var(--dir-text);
+        font-size: 14px;
+        outline: none;
+        cursor: pointer;
+    }
+
+    select option {
+        background: #1f2937;
+    }
+
+    .result-count {
+        font-family: 'DM Mono', monospace;
+        font-size: 12px;
+        color: var(--dir-text-muted);
+        margin-left: auto;
+    }
+
+    /* ── Table ── */
+    .table-container {
+        background: var(--dir-surface);
+        border: 1px solid var(--dir-border);
+        border-radius: 12px;
+        overflow-x: auto;
+    }
+
+    .main-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .main-table th {
+        background: rgba(255, 255, 255, 0.05);
+        text-align: left;
+        padding: 16px 20px;
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: #22c55e;
+        /* Light Green */
+        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .main-table td {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--dir-border);
+        vertical-align: middle;
+    }
+
+    .main-table tr:hover {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .cell-main-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .bank-avatar {
+        width: 40px;
+        height: 40px;
+        background: var(--dir-surface2);
+        border: 1px solid var(--dir-border);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
+
+    .bank-name {
+        font-family: 'Fraunces', serif;
+        font-weight: 700;
+        font-size: 16px;
+        color: var(--dir-text);
+    }
+
+    .bank-code {
+        font-family: 'DM Mono', monospace;
+        font-size: 11px;
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-left: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .ver-badge {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 20px;
+    }
+
+    .ver-yes {
+        background: #22c55e;
+        /* Green */
+        color: #000000;
+        font-weight: 700;
+    }
+
+    .ver-no {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--dir-text-muted);
+    }
+
+    .loc-text {
+        font-size: 13px;
+        color: var(--dir-text-muted);
+    }
+
+    .contact-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 13px;
+    }
+
+    .bt-chip {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border: 1px solid var(--dir-border);
+        border-radius: 6px;
+        margin: 2px;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .bt-extra {
+        font-size: 11px;
+        color: var(--dir-text-muted);
+        font-weight: 600;
+        margin-left: 4px;
+    }
+
+    .units-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .units-num {
+        font-family: 'Fraunces', serif;
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .units-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        font-weight: 600;
+        color: var(--dir-text-muted);
+    }
+
+    .stock-out {
+        color: var(--dir-text-muted);
+    }
+
+    .stock-low {
+        color: #ffffff;
+        text-decoration: underline;
+        font-weight: 600;
+    }
+
+    .stock-ok {
+        color: #ffffff;
+    }
+
+    .btn-detail {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--dir-border);
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-detail:hover {
+        background: rgba(255, 255, 255, 0.15);
+        transform: translateY(-1px);
+    }
+
+    @media (max-width: 640px) {
+        .stats-bar {
+            flex-direction: column;
+        }
+
+        .toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .result-count {
+            margin-left: 0;
+            margin-top: 8px;
+        }
+    }
+
+    /* Modern Inventory Modal Styles */
+    .inv-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .inv-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+        transition: all 0.2s;
+    }
+
+    .inv-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .inv-type {
+        font-weight: 700;
+        font-size: 15px;
+        margin-bottom: 6px;
+        color: #1e293b;
+    }
+
+    .inv-units {
+        font-size: 24px;
+        font-weight: 700;
+        color: #2563eb;
+    }
+
+    .inv-status {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        margin-top: 6px;
+        text-transform: uppercase;
+    }
+
+    .inv-out {
+        border-top: 3px solid #94a3af;
+    }
+
+    .inv-low {
+        border-top: 3px solid #ef4444;
+    }
+
+    .inv-ok {
+        border-top: 3px solid #10b981;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}Hospital Directory{% endblock %}
+{% block page_subtitle %}Access medical facility information and real-time blood inventory across the network{% endblock
+%}
+
+{% block content %}
+<div class="directory-container">
+    <!-- Stats -->
+    <div class="stats-bar">
+        <div class="stat-card">
+            <div class="stat-icon">🏥</div>
+            <div>
+                <div class="stat-label">Network Facilities</div>
+                <div class="stat-value" id="statTotal">0</div>
+            </div>
+        </div>
+        <div class="stat-card c-green">
+            <div class="stat-icon">🛡️</div>
+            <div>
+                <div class="stat-label">Active Stock</div>
+                <div class="stat-value" id="statWithStock">0</div>
+            </div>
+        </div>
+        <div class="stat-card c-red">
+            <div class="stat-icon">🚨</div>
+            <div>
+                <div class="stat-label">Critical Status</div>
+                <div class="stat-value" id="statCritical">0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <div class="search-wrap">
+            <span class="si">🔍</span>
+            <input type="text" id="search" placeholder="Search facility name, county, code...">
+        </div>
+
+        <select id="filterBlood">
+            <option value="all">All Blood Types</option>
+            <option value="A+">A+</option>
+            <option value="A-">A-</option>
+            <option value="B+">B+</option>
+            <option value="B-">B-</option>
+            <option value="AB+">AB+</option>
+            <option value="AB-">AB-</option>
+            <option value="O+">O+</option>
+            <option value="O-">O-</option>
+        </select>
+
+        <div class="result-count" id="resultCount">Searching facilities...</div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-container">
+        <table class="main-table">
+            <thead>
+                <tr>
+                    <th>Facility</th>
+                    <th>Location</th>
+                    <th>Contact</th>
+                    <th>Inventory Status</th>
+                    <th>Units</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Skeleton Rows -->
+                <tr class="skeleton-row">
+                    <td colspan="6">
+                        <div class="skeleton" style="height: 60px; margin: 10px 0; border-radius: 8px;"></div>
+                    </td>
+                </tr>
+                <tr class="skeleton-row">
+                    <td colspan="6">
+                        <div class="skeleton" style="height: 60px; margin: 10px 0; border-radius: 8px;"></div>
+                    </td>
+                </tr>
+                <tr class="skeleton-row">
+                    <td colspan="6">
+                        <div class="skeleton" style="height: 60px; margin: 10px 0; border-radius: 8px;"></div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Details Modal (Premium Read-Only View) -->
+<div id="detailModal" class="modal-overlay hidden">
+    <div class="modal-content modal-large"
+        style="max-width: 800px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(20px);">
+        <div class="modal-header" style="border-bottom: 1px solid rgba(0,0,0,0.05); padding: 24px 32px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div
+                    style="width: 56px; height: 56px; background: var(--dir-surface2); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 28px;">
+                    🏥</div>
+                <div>
+                    <h2 id="detailTitle"
+                        style="font-family: 'Fraunces', serif; font-size: 26px; color: #1e293b; margin: 0;">Facility
+                        Details</h2>
+                    <p id="detailSubtitle" class="modal-subtitle"
+                        style="font-size: 14px; color: #64748b; margin-top: 4px;">Network Overview</p>
+                </div>
+            </div>
+            <button class="modal-close" onclick="closeDirModal()"
+                style="background: rgba(0,0,0,0.05); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">✕</button>
+        </div>
+        <div class="modal-body" style="padding: 32px;">
+            <h3
+                style="font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: #2563eb; font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                <span>🩸</span> Real-time Inventory Status
+            </h3>
+            <div class="inv-grid" id="detailInvGrid"
+                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 16px; margin-bottom: 32px;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                <div id="detailContact"
+                    style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; font-size: 14px; line-height: 1.8;">
+                </div>
+                <div
+                    style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 16px; padding: 20px; font-size: 14px;">
+                    <h4 style="color: #0369a1; font-weight: 700; margin-bottom: 8px;">Networking Note</h4>
+                    <p style="color: #0c4a6e; font-size: 13px;">You can directly refer patients to this facility or
+                        start a chat with their administrator using the actions below.</p>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer" id="detailFooter"
+            style="background: #f8fafc; padding: 24px 32px; border-bottom-left-radius: 24px; border-bottom-right-radius: 24px; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #e2e8f0;">
+            <!-- Buttons injected by JS -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    // Firebase config
+    const firebaseConfig = {
+        apiKey: "AIzaSyBmbgEyTbdFFFwpxaLYdX3rRwvoWSL1wQ0",
+        authDomain: "bloodlink-app-b9297.firebaseapp.com",
+        databaseURL: "https://bloodlink-app-b9297-default-rtdb.firebaseio.com",
+        projectId: "bloodlink-app-b9297",
+        storageBucket: "bloodlink-app-b9297.firebasestorage.app",
+        messagingSenderId: "492859346824",
+        appId: "1:492859346824:web:77dea9c3e8c6eb1376f43d",
+        measurementId: "G-B55EDLVHF2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const rtdb = getDatabase(app);
+
+    const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+    let banks = [];
+    const tbody = document.getElementById("tableBody");
+
+    // Robust identification of current hospital
+    let MY_HOSPITAL_ID = "";
+    let MY_HOSPITAL_CODE = "";
+    let MY_HOSPITAL_NAME = "";
+
+    function syncMyHospitalInfo() {
+        try {
+            const data = JSON.parse(localStorage.getItem("hospitalData") || "{}");
+            MY_HOSPITAL_ID = data.id || "";
+            MY_HOSPITAL_CODE = data.facilityCode || data.code || "";
+            MY_HOSPITAL_NAME = (data.hospitalName || data.name || "").toLowerCase().trim();
+            if (MY_HOSPITAL_NAME) updateUI(); // Refresh if we just got the info
+        } catch (e) {
+            console.warn("Failed to sync hospital info");
+        }
+    }
+    syncMyHospitalInfo();
+
+    // Re-sync after a short delay to handle auth speed
+    setTimeout(syncMyHospitalInfo, 1000);
+    setTimeout(syncMyHospitalInfo, 3000);
+
+    // Safety timeout
+    const loadTimeout = setTimeout(() => {
+        if (tbody && tbody.innerHTML.includes('skeleton')) {
+            console.warn('⏱ Hospital directory fetch timed out.');
+            updateUI();
+        }
+    }, 5000);
+
+    // Live subscription
+    onValue(ref(rtdb, "bloodBanks"), snap => {
+        clearTimeout(loadTimeout);
+        const data = snap.exists() ? snap.val() : {};
+        banks = Object.entries(data).map(([id, b]) => ({ id, ...b }));
+        updateUI();
+
+        // Finalize loading
+        if (window.loadingScreen) {
+            window.loadingScreen.hide();
+        }
+    });
+
+    function updateUI() {
+        const filtered = applyFilters();
+        updateStats();
+        renderTable(filtered);
+    }
+
+    function updateStats() {
+        const totalBanks = banks.filter(b => !isMe(b));
+        const withStock = totalBanks.filter(b => Object.values(b.inventory || {}).some(v => (v?.units || 0) > 0));
+        const critical = totalBanks.filter(b => Object.values(b.inventory || {}).reduce((s, v) => s + (v?.units || 0), 0) < 10);
+        document.getElementById("statTotal").textContent = totalBanks.length;
+        document.getElementById("statWithStock").textContent = withStock.length;
+        document.getElementById("statCritical").textContent = critical.length;
+    }
+
+    function updateUI() {
+        const filtered = applyFilters();
+        updateStats();
+        renderTable(filtered);
+
+        // --- Cache results for instant next-load ---
+        try {
+            localStorage.setItem('hospitals_cache', JSON.stringify({
+                banks: banks,
+                timestamp: Date.now()
+            }));
+        } catch (e) { console.warn('Cache write failed', e); }
+    }
+
+    function isMe(b) {
+        if (!MY_HOSPITAL_ID && !MY_HOSPITAL_CODE && !MY_HOSPITAL_NAME) return false;
+        if (MY_HOSPITAL_ID && b.id === MY_HOSPITAL_ID) return true;
+        if (MY_HOSPITAL_CODE && String(b.code) == String(MY_HOSPITAL_CODE)) return true;
+        if (MY_HOSPITAL_NAME) {
+            const bName = (b.name || "").toLowerCase().trim();
+            if (bName === MY_HOSPITAL_NAME) return true;
+        }
+        return false;
+    }
+
+    function applyFilters() {
+        const s = document.getElementById("search").value.toLowerCase();
+        const f = document.getElementById("filterBlood").value;
+
+        const results = banks.filter(b => {
+            if (isMe(b)) return false;
+            if (f !== "all" && (b.inventory?.[f]?.units || 0) === 0) return false;
+            if (s) {
+                const hay = [b.name, b.address, b.county, b.code].join(" ").toLowerCase();
+                if (!hay.includes(s)) return false;
+            }
+            return true;
+        });
+
+        document.getElementById("resultCount").textContent = `${results.length} facilities found`;
+        return results;
+    }
+
+    function renderTable(rows) {
+        const tbody = document.getElementById("tableBody");
+        if (!rows.length) {
+            const s = document.getElementById("search").value;
+            const f = document.getElementById("filterBlood").value;
+            const msg = (s || f !== 'all') ? 'No facilities match your active filters.' : 'No facilities found in the network.';
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 60px; color: var(--dir-text-muted); font-size: 14px;">${msg}</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = rows.map(b => {
+            const inv = b.inventory || {};
+            const total = Object.values(inv).reduce((s, v) => s + (v?.units || 0), 0);
+            const avail = BLOOD_TYPES.filter(t => (inv[t]?.units || 0) > 0);
+            const stockClass = total === 0 ? "stock-out" : total < 10 ? "stock-low" : "stock-ok";
+
+            return `
+                <tr>
+                    <td>
+                        <div class="cell-main-row">
+                            <div class="bank-avatar">🏥</div>
+                            <div>
+                                <div class="bank-name">${b.name || "—"}${b.code ? `<span class="bank-code">#${b.code}</span>` : ""}</div>
+                                <div class="bank-sub">${b.isVerified ? '<span class="ver-badge ver-yes">✓ Verified</span>' : '<span class="ver-badge ver-no">○ Unverified</span>'}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="loc-text">${b.county || b.address || "—"}</span></td>
+                    <td><div class="contact-stack"><span>${b.phoneNumber || "—"}</span></div></td>
+                    <td><div class="types-wrap">${avail.length ? avail.slice(0, 4).map(t => `<span class="bt-chip">${t}</span>`).join("") + (avail.length > 4 ? `<span class="bt-extra">+${avail.length - 4}</span>` : "") : '<span class="no-stock">No stock</span>'}</div></td>
+                    <td><div class="units-cell ${stockClass}"><span class="units-num">${total}</span><span class="units-label" style="font-size: 11px; color: #64748b; margin-left: 4px;">units</span></div></td>
+                    <td>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn-detail" onclick="openDirDetail('${b.id}')" style="background: #f1f5f9; border: 1px solid #e2e8f0; color: #475569; padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">📊 Details</button>
+                            <a href="/hospital/referrals/new?targetId=${b.id}&targetName=${encodeURIComponent(b.name)}" class="btn-detail" style="background: #10b981; border: none; color: white; padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 6px;">🔗 Refer</a>
+                        </div>
+                    </td>
+                </tr>`;
+        }).join("");
+    }
+
+    window.openDirDetail = function (id) {
+        const b = banks.find(x => x.id === id);
+        if (!b) return;
+        const inv = b.inventory || {};
+        document.getElementById("detailTitle").textContent = b.name;
+        document.getElementById("detailSubtitle").textContent = `${b.county || "Kenya"} · Facility Code: ${b.code || "N/A"}`;
+
+        document.getElementById("detailInvGrid").innerHTML = BLOOD_TYPES.map(t => {
+            const u = inv[t]?.units || 0;
+            const cls = u === 0 ? "inv-out" : u < 20 ? "inv-low" : "inv-ok";
+            return `<div class="inv-card ${cls}"><div class="inv-type">${t}</div><div class="inv-units">${u}</div><div class="inv-status">${u === 0 ? "OUT" : u < 20 ? "LOW" : "OK"}</div></div>`;
+        }).join("");
+
+        document.getElementById("detailContact").innerHTML = `
+            <div style="margin-bottom: 12px;"><strong style="color: #1e293b;">📞 Phone:</strong> <span style="color: #475569;">${b.phoneNumber || "Not provided"}</span></div>
+            <div style="margin-bottom: 12px;"><strong style="color: #1e293b;">📍 Address:</strong> <span style="color: #475569;">${b.address || "Not provided"}</span></div>
+            <div><strong style="color: #1e293b;">🕒 Last Updated:</strong> <span style="color: #475569;">${b.updatedAt ? new Date(b.updatedAt).toLocaleString() : "Recently"}</span></div>
+        `;
+
+        const referUrl = `/hospital/referrals/new?targetId=${id}&targetName=${encodeURIComponent(b.name)}`;
+
+        document.getElementById("detailFooter").innerHTML = `
+            <button class="btn-secondary" onclick="closeDirModal()" style="border-radius: 12px; padding: 10px 24px;">Close</button>
+            <a href="/hospital/chat?targetId=${id}&targetName=${encodeURIComponent(b.name)}" class="btn-primary" style="background: #3b82f6; border: none; border-radius: 12px; padding: 10px 24px; text-decoration: none; color: white; display: flex; align-items: center; gap: 8px;">
+                <span>💬</span> Message
+            </a>
+            <a href="${referUrl}" class="btn-primary" style="background: #10b981; border: none; border-radius: 12px; padding: 10px 24px; text-decoration: none; color: white; display: flex; align-items: center; gap: 8px;">
+                <span>🔗</span> Refer Patient
+            </a>
+        `;
+
+        document.getElementById("detailModal").classList.add("show");
+    };
+
+    window.closeDirModal = () => document.getElementById("detailModal").classList.remove("show");
+
+    // --- Boot: Instant cache render ---
+    (function bootstrap() {
+        try {
+            const cached = localStorage.getItem('hospitals_cache');
+            if (cached) {
+                const data = JSON.parse(cached);
+                if (data.banks && Array.isArray(data.banks)) {
+                    banks = data.banks;
+                    renderTable(applyFilters());
+                    console.log('⚡ Directory loaded from cache');
+                }
+            }
+        } catch (e) { console.warn('Cache read failed', e); }
+    })();
+
+    // Event listeners
+    document.getElementById("search").oninput = updateUI;
+    document.getElementById("filterBlood").onchange = updateUI;
+
+</script>
+{% endblock %}

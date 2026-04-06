@@ -1,0 +1,45 @@
+{% extends "hospital/base.html" %}
+
+{% block title %}Notifications - Hospital Admin{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+{% block page_subtitle %}System alerts and facility activity updates{% endblock %}
+
+{% block header_actions %}
+<button class="action-btn" id="markAllReadBtn">
+    <span class="btn-icon">✓</span>
+    <span>Mark All as Read</span>
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="notifications-container">
+    <div class="filter-bar">
+        <div class="filters">
+            <button class="filter-chip active" data-filter="all">All</button>
+            <button class="filter-chip" data-filter="unread">Unread</button>
+            <button class="filter-chip" data-filter="requests">Requests</button>
+            <button class="filter-chip" data-filter="system">System</button>
+        </div>
+        <div class="search-box">
+            <input type="text" id="notificationSearch" placeholder="Search notifications...">
+        </div>
+    </div>
+
+    <div class="notifications-list" id="notificationsList">
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading your notifications...</p>
+        </div>
+    </div>
+
+    <div id="pagination" class="pagination-footer hidden">
+        <button class="page-btn" id="prevPage" disabled>Previous</button>
+        <span class="page-info">Page 1 of 1</span>
+        <button class="page-btn" id="nextPage" disabled>Next</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='hospital/notifications.js') }}"></script>
+{% endblock %}

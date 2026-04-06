@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Hospital Admin - BloodLink{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <!-- Firebase SDK v9 Compat -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body class="hospital-portal loading-active {% block body_class %}{% endblock %}">
+    <!-- Top Progress Bar (Minimal navigation indicator) -->
+    <div class="page-transition-loading" id="pageLoadingBar"></div>
+
+    <!-- Hospital Dashboard Layout -->
+    <div id="adminDashboard" class="admin-dashboard">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-wrapper">
+                    <div class="logo-box" style="border-radius: 8px;">
+                        <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="BloodLink Logo"
+                            class="logo-image-square">
+                    </div>
+                </div>
+                <div class="sidebar-branding">
+                    <h1 class="sidebar-title" style="font-size: 18px; letter-spacing: -0.5px;">BloodLink</h1>
+                    <p class="sidebar-tagline" id="hospitalNameDisplay">Hospital Admin</p>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle Sidebar">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="/hospital/dashboard"
+                    class="nav-item {% if request.path == '/hospital/dashboard' or request.path == '/hospital' %}active{% endif %}"
+                    data-screen="hospital_dashboard">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+                <a href="/hospital/requests"
+                    class="nav-item {% if request.path == '/hospital/requests' %}active{% endif %}"
+                    data-screen="hospital_requests">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-label">Blood Requests</span>
+                </a>
+                <a href="/hospital/referrals"
+                    class="nav-item {% if request.path == '/hospital/referrals' %}active{% endif %}"
+                    data-screen="hospital_referrals">
+                    <span class="nav-icon">🔗</span>
+                    <span class="nav-label">Referrals</span>
+                </a>
+                <a href="/hospital/hospitals"
+                    class="nav-item {% if request.path == '/hospital/hospitals' %}active{% endif %}"
+                    data-screen="hospital_directory">
+                    <span class="nav-icon">🏥</span>
+                    <span class="nav-label">Blood Banks</span>
+                </a>
+                <a href="/hospital/reports"
+                    class="nav-item {% if request.path == '/hospital/reports' %}active{% endif %}"
+                    data-screen="hospital_reports">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Reports</span>
+                </a>
+                <a href="/hospital/notifications"
+                    class="nav-item {% if request.path == '/hospital/notifications' %}active{% endif %}"
+                    data-screen="notifications">
+                    <span class="nav-icon">🔔</span>
+                    <span class="nav-label">Notifications</span>
+                    <span class="nav-badge hidden" id="notificationBadge">0</span>
+                </a>
+                <a href="/hospital/bookings"
+                    class="nav-item {% if request.path == '/hospital/bookings' %}active{% endif %}"
+                    data-screen="hospital_bookings">
+                    <span class="nav-icon">📅</span>
+                    <span class="nav-label">Bookings</span>
+                </a>
+                <a href="/hospital/donors" class="nav-item {% if request.path == '/hospital/donors' %}active{% endif %}"
+                    data-screen="hospital_donors">
+                    <span class="nav-icon">🧔</span>
+                    <span class="nav-label">Nearby Donors</span>
+                </a>
+                <a href="/hospital/chat" class="nav-item {% if request.path == '/hospital/chat' %}active{% endif %}"
+                    data-screen="hospital_chat">
+                    <span class="nav-icon">💬</span>
+                    <span class="nav-label">Chat</span>
+                </a>
+                <a href="/hospital/settings"
+                    class="nav-item {% if request.path == '/hospital/settings' %}active{% endif %}"
+                    data-screen="settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Settings</span>
+                </a>
+                <a href="/hospital/policies"
+                    class="nav-item {% if request.path == '/hospital/policies' %}active{% endif %}"
+                    data-screen="policies">
+                    <span class="nav-icon">⚖️</span>
+                    <span class="nav-label">Policies</span>
+                </a>
+                <a href="/hospital/logs" class="nav-item {% if request.path == '/hospital/logs' %}active{% endif %}"
+                    data-screen="hospital_logs">
+                    <span class="nav-icon">📜</span>
+                    <span class="nav-label">Activity Logs</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer" style="padding: 20px; border-top: 1px solid var(--gray-200);">
+                <div class="user-profile" style="display: flex; align-items: center; gap: 12px;">
+                    <div class="user-avatar" id="userAvatar"
+                        style="width: 32px; height: 32px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;">
+                        H</div>
+                    <div class="user-details">
+                        <div class="user-name" id="userName"
+                            style="font-weight: 600; color: var(--text-primary); font-size: 13px;">
+                            <div class="shimmer-placeholder"
+                                style="width: 100px; height: 14px; background: rgba(0,0,0,0.05); border-radius: 4px;">
+                            </div>
+                        </div>
+                        <div class="user-email" id="userEmail" style="font-size: 11px; color: var(--text-secondary);">
+                            <div class="shimmer-placeholder"
+                                style="width: 130px; height: 10px; background: rgba(0,0,0,0.05); border-radius: 4px; margin-top: 4px;">
+                            </div>
+                        </div>
+                        <div id="hospitalCodeDisplay"
+                            style="font-size: 10px; color: var(--text-tertiary); margin-top: 2px;">
+                            <div class="shimmer-placeholder"
+                                style="width: 80px; height: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; margin-top: 4px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="sidebar-footer-actions"
+                    style="display: flex; flex-direction: column; gap: 8px; margin-top: 16px;">
+                    <button class="footer-action-btn" id="logoutBtn" title="Logout"
+                        style="width: 100%; background: rgba(197, 40, 61, 0.1); border: none; color: #C5283D; padding: 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; font-weight: 600; transition: all 0.2s;">
+                        <span>🚪</span>
+                        <span>Logout</span>
+                    </button>
+                    <button class="footer-action-btn" id="resetPasswordBtn" title="Reset Password"
+                        style="width: 100%; background: transparent; border: 1px solid var(--gray-200); color: var(--text-secondary); padding: 8px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px;">
+                        <span>🔑</span>
+                        <span>Reset Password</span>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-container">
+            <!-- Header -->
+            <header class="page-header"
+                style="background: white; border-bottom: 1px solid var(--gray-200); height: 72px;">
+                <div class="header-content" style="height: 100%;">
+                    <div class="header-left">
+                        <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle Menu">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </button>
+                        <div class="header-info">
+                            <h1 class="page-title" style="font-size: 22px; font-weight: 600;">{% block page_title
+                                %}Dashboard{% endblock %}</h1>
+                            <p class="page-subtitle"
+                                style="font-size: 14px; color: var(--text-secondary); margin-top: 2px;">
+                                {% block page_subtitle %}Overview of blood bank operations{% endblock %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="header-right" style="display: flex; align-items: center; gap: 16px;">
+                        <div class="user-avatar"
+                            style="width: 40px; height: 40px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">
+                            WC</div>
+                        <button id="headerLogoutBtn" title="Logout"
+                            style="background: transparent; border: none; cursor: pointer; font-size: 20px;">🚪</button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <div class="page-content">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    {% block modals %}{% endblock %}
+
+    <!-- Firebase Config -->
+    <script src="{{ url_for('static', filename='firebase-config.js') }}"></script>
+    <!-- Utilities -->
+    <script src="{{ url_for('static', filename='utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='hospital/audit-logs.js') }}"></script>
+    <!-- Authentication -->
+    <script src="{{ url_for('static', filename='auth.js') }}"></script>
+    <script src="{{ url_for('static', filename='sidebar.js') }}"></script>
+
+    <!-- PDF Generation Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- Mobile Menu Toggle -->
+    <script>
+        (function () {
+            const mobileToggle = document.getElementById('mobileMenuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const mainContainer = document.querySelector('.main-container');
+
+            if (mobileToggle && sidebar) {
+                function toggleSidebar() {
+                    sidebar.classList.toggle('show');
+                    mobileToggle.classList.toggle('active');
+                    if (window.innerWidth <= 768) {
+                        if (sidebar.classList.contains('show')) {
+                            document.body.style.overflow = 'hidden';
+                        } else {
+                            document.body.style.overflow = '';
+                        }
+                    }
+                }
+                mobileToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleSidebar();
+                });
+                document.addEventListener('click', (e) => {
+                    if (window.innerWidth <= 768 && sidebar.classList.contains('show') && !sidebar.contains(e.target) && !mobileToggle.contains(e.target)) {
+                        toggleSidebar();
+                    }
+                });
+            }
+        })();
+    </script>
+
+    <!-- Page Initialization -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Check if user is already initialized by auth.js
+            const checkInit = setInterval(() => {
+                if (window.hospitalData && window.initializePage) {
+                    clearInterval(checkInit);
+                    console.log('Hospital data ready, page initializing...');
+                }
+            }, 500);
+
+            // Safety timeout
+            setTimeout(() => clearInterval(checkInit), 5000);
+        });
+    </script>
+
+    <!-- Core Loader & Transitions -->
+    <script src="{{ url_for('static', filename='page-transitions.js') }}"></script>
+
+    <!-- Hospital Module Scripts -->
+    <script src="{{ url_for('static', filename='hospital/hospital.js') }}"></script>
+    <script src="{{ url_for('static', filename='hospital/hospital-admin.js') }}"></script>
+
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

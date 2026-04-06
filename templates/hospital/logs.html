@@ -1,0 +1,218 @@
+{% extends "hospital/base.html" %}
+
+{% block body_class %}notification-theme-view{% endblock %}
+
+{% block title %}Activity Logs - BloodLink{% endblock %}
+{% block page_title %}Activity Logs{% endblock %}
+{% block page_subtitle %}Audit trail of actions performed in your facility{% endblock %}
+
+{% block extra_head %}
+<style>
+    .audit-log-container {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        margin-top: 20px;
+    }
+
+    .audit-log-header {
+        padding: 24px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+    }
+
+    .audit-log-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0;
+        font-size: 18px;
+        font-weight: 800;
+        color: #1e293b;
+    }
+
+    .audit-log-filters {
+        padding: 16px 24px;
+        background: #fff;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .audit-logs-list {
+        padding: 24px;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    .audit-log-entry {
+        padding: 16px;
+        border-radius: 12px;
+        background: #fdfdfd;
+        border: 1px solid rgba(0, 0, 0, 0.03);
+        margin-bottom: 16px;
+        transition: all 0.2s;
+        border-left: 4px solid #cbd5e1;
+    }
+
+    .audit-log-entry:hover {
+        transform: translateX(4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        background: #fff;
+    }
+
+    /* Action specific colors */
+    .audit-log-entry.create {
+        border-left-color: #22c55e;
+    }
+
+    .audit-log-entry.update {
+        border-left-color: #3b82f6;
+    }
+
+    .audit-log-entry.delete {
+        border-left-color: #ef4444;
+    }
+
+    .audit-log-entry.approve {
+        border-left-color: #10b981;
+    }
+
+    .audit-log-entry.reject {
+        border-left-color: #f59e0b;
+    }
+
+    .audit-log-entry.login {
+        border-left-color: #8b5cf6;
+    }
+
+    .audit-log-entry-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+    }
+
+    .audit-badge {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .audit-badge-create {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .audit-badge-update {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .audit-badge-delete {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .audit-badge-login {
+        background: #f3e8ff;
+        color: #6b21a8;
+    }
+
+    .audit-badge-approve {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .audit-badge-reject {
+        background: #ffedd5;
+        color: #9a3412;
+    }
+
+    .audit-log-timestamp {
+        font-size: 12px;
+        color: #94a3b8;
+        font-weight: 500;
+    }
+
+    .audit-log-details {
+        font-size: 14px;
+        color: #334155;
+        line-height: 1.5;
+    }
+
+    .audit-log-user {
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #94a3b8;
+    }
+
+    .empty-state-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="audit-log-container">
+    <div class="audit-log-header">
+        <h3 class="audit-log-title">
+            <span>📜</span>
+            <span>Facility Action Logs</span>
+        </h3>
+        <button class="btn-secondary btn-small" onclick="refreshLogs()">
+            🔄 Refresh
+        </button>
+    </div>
+
+    <div class="audit-log-filters">
+        <select id="actionFilter" class="filter-select" onchange="applyFilters()">
+            <option value="">All Actions</option>
+            <option value="create">Create</option>
+            <option value="update">Update</option>
+            <option value="delete">Delete</option>
+            <option value="login">Login</option>
+            <option value="approve">Approve</option>
+            <option value="reject">Reject</option>
+        </select>
+        <select id="resourceFilter" class="filter-select" onchange="applyFilters()">
+            <option value="">All Resources</option>
+            <option value="inventory">Inventory</option>
+            <option value="request">Requests</option>
+            <option value="referral">Referrals</option>
+            <option value="system">System</option>
+        </select>
+        <div style="flex: 1; min-width: 200px;">
+            <input type="text" id="userSearchFilter" class="form-control" placeholder="🔍 Search Admin Email..."
+                style="border-radius: 8px; font-size: 13px; height: 38px; border: 1px solid #e2e8f0; padding: 0 12px; width: 100%;"
+                onkeyup="if(event.key === 'Enter') applyFilters()">
+        </div>
+    </div>
+
+    <div id="auditLogsList" class="audit-logs-list">
+        <div class="empty-state">
+            <div class="loading-spinner"></div>
+            <p>Loading activity logs...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='hospital/audit-logs.js') }}"></script>
+<script src="{{ url_for('static', filename='hospital/logs.js') }}"></script>
+{% endblock %}

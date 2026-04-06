@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block body_class %}notification-theme-view{% endblock %}
+
+{% block title %}Audit Logs - BloodLink{% endblock %}
+{% block page_title %}Audit Logs{% endblock %}
+{% block page_subtitle %}Track admin actions and system changes{% endblock %}
+
+{% block header_actions %}
+<button class="btn-secondary btn-small" onclick="exportAuditLogs()" style="background: white; color: var(--primary);">
+    📤 Export
+</button>
+{% endblock %}
+
+{% block content %}
+<!-- Admin Audit Logs Only -->
+<div id="adminAuditLogsContainer">
+    <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>Loading audit logs...</p>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="content-card" style="margin-top: 32px;">
+    <div class="card-header">
+        <h2 class="card-title">Audit Log Statistics</h2>
+        <p class="card-subtitle">Summary of admin activities</p>
+    </div>
+    <div id="auditStats" style="padding: 20px;">
+        <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Loading statistics...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', async function () {
+        await initializeAuditLogsPage();
+    });
+
+    async function initializeAuditLogsPage() {
+        if (!window.auditLogs) return;
+
+        // Create audit log UI (admin only, no user logs)
+        await window.auditLogs.createUI('adminAuditLogsContainer', true, false);
+
+        // Load statistics
+        await loadAuditStatistics();
+    }
+
+    async function loadAuditStatistics() {
+        try {
+            const logs = await window.auditLogs.get();
+
+            // Count by action type
+            const actionCounts = {};
+            logs.forEach(log => {
+                const action = log.action || 'unknown';
+                actionCounts[action] = (actionCounts[action] || 0) + 1;
+            });
+
+            const container = document.getElementById('auditStats');
+            if (!container) return;
+
+            const sorted = Object.entries(actionCounts)
+                .sort((a, b) => b[1] - a[1]);
+
+            if (sorted.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p>No audit data available</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                    ${sorted.slice(0, 6).map(([action, count]) => `
+                        <div style="padding: 16px; background: var(--gray-50); border-radius: 8px;">
+                            <div style="font-size: 12px; color: var(--text-secondary); text-transform: capitalize;">${action}</div>
+                            <div style="font-size: 28px; font-weight: 700; color: var(--text-primary); margin-top: 4px;">${count}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--gray-200);">
+                    <div style="font-size: 13px; color: var(--text-secondary);">
+                        <strong>Total admin actions:</strong> ${logs.length} | 
+                        <strong>Unique action types:</strong> ${sorted.length}
+                    </div>
+                </div>
+            `;
+
+        } catch (error) {
+            console.error('Error loading audit statistics:', error);
+        }
+    }
+
+    async function exportAuditLogs() {
+        try {
+            const logs = await window.auditLogs.get();
+
+            if (!logs || logs.length === 0) {
+                window.utils.showNotification('No audit logs to export', 'warning');
+                return;
+            }
+
+            // Convert to CSV
+            const csv = convertAuditLogsToCSV(logs);
+
+            // Download
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `admin-audit-logs-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            // Log audit event
+            if (window.auditLogs) {
+                await window.auditLogs.actions.exportData('audit_logs', {
+                    count: logs.length,
+                    format: 'csv'
+                });
+            }
+
+            window.utils.showNotification('Audit logs exported successfully!', 'success');
+
+        } catch (error) {
+            console.error('Export error:', error);
+            window.utils.showNotification('Failed to export audit logs: ' + error.message, 'error');
+        }
+    }
+
+    function convertAuditLogsToCSV(logs) {
+        const headers = ['Timestamp', 'Action', 'Resource Type', 'Admin Email', 'Admin Role', 'Resource ID', 'Details'];
+
+        const rows = logs.map(log => {
+            return [
+                log.timestampISO || '',
+                log.action || '',
+                log.resourceType || '',
+                log.admin?.email || '',
+                log.admin?.role || '',
+                log.resourceId || '',
+                JSON.stringify(log.details || {}).replace(/"/g, '""')
+            ];
+        });
+
+        return [
+            headers.join(','),
+            ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+        ].join('\n');
+    }
+</script>
+{% endblock %}

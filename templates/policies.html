@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block body_class %}notification-theme-view{% endblock %}
+
+{% block title %}Admin Policies - BloodLink{% endblock %}
+{% block page_title %}Admin Policies & Guidelines{% endblock %}
+{% block page_subtitle %}View and understand your responsibilities as an admin{% endblock %}
+
+{% block content %}
+<!-- Policy Notice Banner -->
+<div
+    style="background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%); border-left: 4px solid var(--primary); padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+    <div style="display: flex; align-items: start; gap: 12px;">
+        <span style="font-size: 24px;">ℹ️</span>
+        <div>
+            <h3 style="font-size: 15px; font-weight: 700; margin: 0 0 4px 0; color: var(--text-primary);">
+                Development Mode Notice
+            </h3>
+            <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">
+                These policies are currently in development mode. They serve as guidelines and will be strictly enforced
+                in production.
+                All admin actions are being logged for audit purposes.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Role Information -->
+<div class="content-card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <h2 class="card-title">Your Admin Role</h2>
+        <p class="card-subtitle">Understanding your access level and responsibilities</p>
+    </div>
+    <div id="roleInfo" style="padding: 16px; background: var(--gray-50); border-radius: 8px;">
+        <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Detecting your admin role...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Policies Container -->
+<div id="policiesContainer">
+    <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>Loading policies...</p>
+    </div>
+</div>
+
+<!-- Audit Log Preview (Super Admin Only) -->
+<div id="auditLogPreview" class="audit-log-container" style="margin-top: 32px; display: none;">
+    <div class="audit-log-header">
+        <h3 class="audit-log-title">
+            <span>📜</span>
+            <span>Recent Audit Logs</span>
+        </h3>
+        <button class="btn-secondary btn-small" onclick="viewAllAuditLogs()">
+            View All Logs
+        </button>
+    </div>
+    <div id="recentAuditLogs">
+        <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Loading audit logs...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Policy Acknowledgment -->
+<div class="content-card" style="margin-top: 32px;">
+    <div class="card-header">
+        <h2 class="card-title">Policy Acknowledgment</h2>
+        <p class="card-subtitle">Confirm your understanding of admin responsibilities</p>
+    </div>
+    <div style="padding: 20px; background: var(--gray-50); border-radius: 8px;">
+        <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 16px;">
+            <input type="checkbox" id="policyAcknowledge" style="margin-top: 4px; width: 18px; height: 18px;">
+            <label for="policyAcknowledge" style="font-size: 14px; color: var(--text-primary);">
+                <strong>I acknowledge that I have read and understood the admin policies and guidelines</strong>
+            </label>
+        </div>
+        <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 16px;">
+            <input type="checkbox" id="dataPrivacyAck" style="margin-top: 4px; width: 18px; height: 18px;">
+            <label for="dataPrivacyAck" style="font-size: 14px; color: var(--text-primary);">
+                <strong>I agree to handle all patient and donor data with strict confidentiality</strong>
+            </label>
+        </div>
+        <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 16px;">
+            <input type="checkbox" id="securityAck" style="margin-top: 4px; width: 18px; height: 18px;">
+            <label for="securityAck" style="font-size: 14px; color: var(--text-primary);">
+                <strong>I commit to maintaining the security of my admin account</strong>
+            </label>
+        </div>
+        <button id="acknowledgeBtn" class="btn-primary" style="margin-top: 16px;" disabled>
+            Confirm Acknowledgment
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize policies page
+    document.addEventListener('DOMContentLoaded', async function () {
+        await initializePoliciesPage();
+    });
+
+    async function initializePoliciesPage() {
+        // Wait for auth to be ready
+        const checkAuth = setInterval(async () => {
+            if (window.auth && window.auth.currentUser && window.userRole) {
+                clearInterval(checkAuth);
+
+                const role = window.userRole;
+
+                // Update role info
+                updateRoleInfo(role);
+
+                // Render policies
+                if (window.adminPolicies) {
+                    window.adminPolicies.render('policiesContainer', role);
+                }
+
+                // Show audit logs for super admin
+                if (role === 'super_admin' && window.auditLogs) {
+                    document.getElementById('auditLogPreview').style.display = 'block';
+                    await loadRecentAuditLogs();
+                }
+
+                // Setup acknowledgment checkboxes
+                setupAcknowledgment();
+            }
+        }, 500);
+
+        // Timeout after 5 seconds
+        setTimeout(() => clearInterval(checkAuth), 5000);
+    }
+
+    function updateRoleInfo(role) {
+        const container = document.getElementById('roleInfo');
+        if (!container) return;
+
+        if (role === 'super_admin') {
+            container.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 32px;">👑</span>
+                    <div>
+                        <div style="font-size: 18px; font-weight: 700; color: var(--text-primary);">Super Admin</div>
+                        <div style="font-size: 13px; color: var(--text-secondary);">Full system access with unrestricted permissions</div>
+                    </div>
+                </div>
+                <div style="background: white; padding: 16px; border-radius: 8px; margin-top: 12px;">
+                    <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">✅ Your Permissions:</div>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: var(--text-secondary);">
+                        <li>Full access to all system features</li>
+                        <li>User management (create, update, delete)</li>
+                        <li>Blood bank administration</li>
+                        <li>Hospital admin oversight</li>
+                        <li>System-wide audit log access</li>
+                        <li>Platform configuration</li>
+                        <li>Data export privileges</li>
+                    </ul>
+                </div>
+            `;
+        } else if (role === 'hospital_admin') {
+            container.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 32px;">🏥</span>
+                    <div>
+                        <div style="font-size: 18px; font-weight: 700; color: var(--text-primary);">Hospital Admin</div>
+                        <div style="font-size: 13px; color: var(--text-secondary);">Limited access to your facility data only</div>
+                    </div>
+                </div>
+                <div style="background: white; padding: 16px; border-radius: 8px; margin-top: 12px;">
+                    <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">✅ Your Permissions:</div>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: var(--text-secondary);">
+                        <li>Manage your facility's blood requests</li>
+                        <li>Update hospital inventory levels</li>
+                        <li>Create patient referrals</li>
+                        <li>Inter-hospital communication</li>
+                        <li>Facility-specific reports</li>
+                        <li>View facility audit logs</li>
+                    </ul>
+                </div>
+                <div style="background: #FEF3C7; padding: 12px; border-radius: 8px; margin-top: 12px; border-left: 3px solid #F59E0B;">
+                    <div style="font-size: 12px; color: #78350F;">
+                        <strong>⚠️ Restricted:</strong> You cannot access other hospitals' data, system-wide user management, or platform settings.
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    async function loadRecentAuditLogs() {
+        if (!window.auditLogs) return;
+
+        try {
+            const logs = await window.auditLogs.get();
+            const recentLogs = logs.slice(0, 5);
+
+            if (window.auditLogs.render) {
+                window.auditLogs.render('recentAuditLogs', recentLogs);
+            }
+        } catch (error) {
+            console.error('Error loading audit logs:', error);
+        }
+    }
+
+    function viewAllAuditLogs() {
+        // Navigate to audit logs page (if created) or show in modal
+        window.utils.showNotification('Audit logs feature coming soon!', 'info');
+    }
+
+    function setupAcknowledgment() {
+        const checkboxes = document.querySelectorAll('#policyAcknowledge, #dataPrivacyAck, #securityAck');
+        const acknowledgeBtn = document.getElementById('acknowledgeBtn');
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                acknowledgeBtn.disabled = !allChecked;
+            });
+        });
+
+        acknowledgeBtn.addEventListener('click', async () => {
+            try {
+                const currentUser = auth.currentUser;
+                if (!currentUser) return;
+
+                const emailKey = currentUser.email.replace(/\./g, ',');
+
+                // Store acknowledgment in Firestore
+                await firestore.collection('admin_acknowledgments').doc(emailKey).set({
+                    email: currentUser.email,
+                    role: window.userRole,
+                    acknowledgedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    policies: {
+                        general: document.getElementById('policyAcknowledge').checked,
+                        dataPrivacy: document.getElementById('dataPrivacyAck').checked,
+                        security: document.getElementById('securityAck').checked
+                    }
+                });
+
+                // Log audit event
+                if (window.auditLogs) {
+                    await window.auditLogs.log('update', 'admin_policies', null, {
+                        action: 'Policy acknowledgment completed',
+                        role: window.userRole
+                    }, 'info');
+                }
+
+                window.utils.showNotification('Policy acknowledgment recorded successfully!', 'success');
+                acknowledgeBtn.textContent = 'Acknowledged ✓';
+                acknowledgeBtn.disabled = true;
+
+            } catch (error) {
+                console.error('Acknowledgment error:', error);
+                window.utils.showNotification('Failed to record acknowledgment: ' + error.message, 'error');
+            }
+        });
+    }
+</script>
+{% endblock %}
