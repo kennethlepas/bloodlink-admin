@@ -298,122 +298,363 @@
         #appLoadingScreen {
             position: fixed;
             inset: 0;
-            background: #ffffff;
-            z-index: 9999;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            font-family: 'Inter', -apple-system, sans-serif;
+            transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 40px 20px;
+        }
+
+        .loader-bg-animation {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .loader-bubble {
+            position: absolute;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: floatBubble 15s infinite ease-in-out;
+        }
+
+        @keyframes floatBubble {
+
+            0%,
+            100% {
+                transform: translateY(0) scale(1);
+            }
+
+            50% {
+                transform: translateY(-50px) scale(1.1);
+            }
+        }
+
+        .loader-content-wrap {
+            max-width: 1200px;
+            width: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.6s;
-        }
-
-        .loader-content {
             text-align: center;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .loader-badge {
+            background: rgba(37, 99, 235, 0.1);
+            color: #2563EB;
+            padding: 8px 24px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(37, 99, 235, 0.1);
+        }
+
+        .loader-content-wrap h1 {
+            font-size: clamp(32px, 5vw, 48px);
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 16px;
+            line-height: 1.1;
+            letter-spacing: -1px;
+        }
+
+        .loader-content-wrap h1 span {
+            color: #C5283D;
+        }
+
+        .loader-subtitle {
+            font-size: clamp(16px, 2vw, 20px);
+            color: #475569;
+            max-width: 700px;
+            margin-bottom: 60px;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+
+        .loader-feature-display {
             width: 100%;
-            max-width: 300px;
-        }
-
-        .loader-logo-wrap {
-            margin-bottom: 40px;
+            max-width: 900px;
+            height: 340px;
             position: relative;
+            margin-bottom: 60px;
         }
 
-        .loader-logo {
-            width: 100px;
-            height: 100px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(197, 40, 61, 0.2);
-            animation: logoPulse 2s ease-in-out infinite;
+        .feature-item {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            gap: 40px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            visibility: hidden;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(12px);
+            padding: 30px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.03);
+            text-align: left;
         }
 
-        @keyframes logoPulse {
+        .feature-item.active {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+        }
+
+        .feature-image-box {
+            flex: 0 0 300px;
+            height: 100%;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-image-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .feature-text-box {
+            flex: 1;
+        }
+
+        .feature-text-box h2 {
+            font-size: 14px;
+            color: #C5283D;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+
+        .feature-text-box h3 {
+            font-size: 28px;
+            color: #1e293b;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .feature-text-box p {
+            font-size: 18px;
+            color: #64748b;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .loader-progress-area {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .loader-logo-mini {
+            width: 60px;
+            height: 60px;
+            background: white;
+            padding: 8px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            animation: pulseSimple 2s infinite ease-in-out;
+        }
+
+        .loader-logo-mini img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        @keyframes pulseSimple {
 
             0%,
             100% {
                 transform: scale(1);
-                opacity: 1;
-                filter: drop-shadow(0 5px 15px rgba(197, 40, 61, 0.1));
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             }
 
             50% {
-                transform: scale(1.08);
-                opacity: 0.9;
-                filter: drop-shadow(0 15px 35px rgba(197, 40, 61, 0.3));
+                transform: scale(1.05);
+                box-shadow: 0 8px 24px rgba(37, 99, 235, 0.1);
             }
         }
 
-        .loader-progress-container {
+        .loader-bar-wrap {
             width: 100%;
-            height: 4px;
-            background: #f1f5f9;
+            height: 8px;
+            background: rgba(37, 99, 235, 0.1);
             border-radius: 10px;
             overflow: hidden;
-            margin-bottom: 16px;
             position: relative;
         }
 
-        .loader-progress-fill {
-            position: absolute;
-            top: 0;
-            left: 0;
+        .loader-bar-fill {
             height: 100%;
             width: 0%;
-            background: linear-gradient(90deg, #C5283D, #2563EB);
+            background: linear-gradient(90deg, #2563EB, #C5283D);
             border-radius: 10px;
             transition: width 0.4s ease-out;
         }
 
-        .loader-status-text {
-            font-size: 13px;
+        .loader-status {
+            font-size: 14px;
+            font-weight: 600;
             color: #64748b;
-            font-weight: 500;
-            letter-spacing: 0.3px;
-            min-height: 20px;
-            opacity: 0;
-            transform: translateY(5px);
-            animation: fadeInUp 0.4s ease forwards;
+            height: 20px;
         }
 
-        @keyframes fadeInUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .loader-footer {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding-top: 40px;
         }
 
-        .bloodlink-brand {
-            position: absolute;
-            bottom: 40px;
+        .kenyan-flag {
+            width: 44px;
+            height: 28px;
+            display: flex;
+            flex-direction: column;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .loader-branding {
             font-size: 12px;
             font-weight: 700;
-            color: #C5283D;
+            color: #94a3b8;
+            letter-spacing: 3px;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            opacity: 0.6;
+        }
+
+        @media (max-width: 900px) {
+            .feature-item {
+                flex-direction: column;
+                height: auto;
+                text-align: center;
+                gap: 20px;
+            }
+
+            .feature-image-box {
+                flex: none;
+                width: 100%;
+                height: 180px;
+            }
+
+            .loader-feature-display {
+                height: auto;
+                min-height: 400px;
+            }
         }
 
         #appLoadingScreen.fade-out {
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
+            transform: scale(1.05);
         }
     </style>
 </head>
 
 <body class="loading-active">
 
-    <!-- Premium Loading Screen -->
     <div id="appLoadingScreen">
-        <div class="loader-content">
-            <div class="loader-logo-wrap">
-                <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="BloodLink" class="loader-logo">
-            </div>
-            <div class="loader-progress-container">
-                <div class="loader-progress-fill" id="loaderFill"></div>
-            </div>
-            <div class="loader-status-text" id="loaderStatus">Initializing application...</div>
+        <div class="loader-bg-animation">
+            <div class="loader-bubble" style="width:300px; height:300px; top:-50px; left:-50px;"></div>
+            <div class="loader-bubble"
+                style="width:400px; height:400px; bottom:-100px; right:-100px; animation-delay: -5s;"></div>
         </div>
-        <div class="bloodlink-brand">BloodLink Admin</div>
+
+        <div class="loader-content-wrap">
+            <div class="loader-badge">SECURE ADMIN ACCESS</div>
+            <h1>Welcome to <span>BloodLink</span> Admin Portal</h1>
+            <p class="loader-subtitle">Empowering healthcare facilities with real-time coordination and donor
+                management.</p>
+
+            <div class="loader-feature-display">
+                <!-- Theme 1: Impact -->
+                <div class="feature-item" id="feat-1">
+                    <div class="feature-image-box">
+                        <img src="{{ url_for('static', filename='images/blog_impact.jpg') }}" alt="Impact">
+                    </div>
+                    <div class="feature-text-box">
+                        <h2>Impact</h2>
+                        <h3>Saving Lives Together</h3>
+                        <p>One single donation can save up to three lives. Your work today facilitates this life-saving
+                            cycle.</p>
+                    </div>
+                </div>
+
+                <!-- Theme 2: Network -->
+                <div class="feature-item" id="feat-2">
+                    <div class="feature-image-box">
+                        <img src="{{ url_for('static', filename='images/blog_network.jpg') }}" alt="Network">
+                    </div>
+                    <div class="feature-text-box">
+                        <h2>Network</h2>
+                        <h3>Nationwide Reach</h3>
+                        <p>Real-time inventory synchronization between 450+ healthcare facilities nationally across all
+                            47 counties.</p>
+                    </div>
+                </div>
+
+                <!-- Theme 3: Innovation -->
+                <div class="feature-item" id="feat-3">
+                    <div class="feature-image-box">
+                        <img src="{{ url_for('static', filename='images/blog_innovation.jpg') }}" alt="Innovation">
+                    </div>
+                    <div class="feature-text-box">
+                        <h2>Innovation</h2>
+                        <h3>Smart Coordination</h3>
+                        <p>AI-driven donor matching algorithm prioritizing urgent and critical surgical needs for faster
+                            response.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="loader-progress-area">
+                <div class="loader-logo-mini">
+                    <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo">
+                </div>
+                <div class="loader-bar-wrap">
+                    <div class="loader-bar-fill" id="loaderFill"></div>
+                </div>
+                <div class="loader-status" id="loaderStatus">Initializing secure session...</div>
+            </div>
+        </div>
+
+        <div class="loader-footer">
+            <div class="kenyan-flag">
+                <div class="flag-black" style="flex:1"></div>
+                <div class="flag-red"
+                    style="flex:1; border-top:1.5px solid #fff; border-bottom:1.5px solid #fff; position:relative">
+                    <div class="flag-shield"
+                        style="width:6px; height:10px; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); border:1px solid #fff; background:#BB0613; border-radius:50%/40%">
+                    </div>
+                </div>
+                <div class="flag-green" style="flex:1"></div>
+            </div>
+            <div class="loader-branding">BLOODLINK · SAVING LIVES IN KENYA</div>
+        </div>
     </div>
 
     <!-- Welcome / Login -->
@@ -603,7 +844,6 @@
         (function () {
             const loader = document.getElementById('appLoadingScreen');
             const fill = document.getElementById('loaderFill');
-            const statusText = document.getElementById('loaderStatus');
             const loginContainer = document.getElementById('loginContainer');
 
             const messages = [
@@ -618,17 +858,23 @@
 
             let currentMessageIndex = 0;
             let progress = 0;
+            const statusText = document.getElementById('loaderStatus');
 
-            // Advance progress and messages
+            // Advance progress and features
             const updateLoader = () => {
                 if (progress < 100) {
-                    // Random jumps for "realistic" feel
-                    const jump = Math.floor(Math.random() * 15) + 5;
+                    let jump;
+                    if (progress < 25) {
+                        jump = Math.floor(Math.random() * 2) + 1; // Slower start
+                    } else {
+                        jump = Math.floor(Math.random() * 4) + 2;
+                    }
+
                     progress = Math.min(100, progress + jump);
                     fill.style.width = progress + '%';
 
-                    // Update message occasionally
-                    if (progress > (currentMessageIndex + 1) * (100 / messages.length) && currentMessageIndex < messages.length - 1) {
+                    // Update status messages
+                    if (progress > (currentMessageIndex + 1) * 20 && currentMessageIndex < messages.length - 1) {
                         currentMessageIndex++;
                         statusText.style.opacity = 0;
                         setTimeout(() => {
@@ -637,11 +883,24 @@
                         }, 200);
                     }
 
-                    // Call again with variable delay
-                    const nextDelay = Math.floor(Math.random() * 300) + 150;
+                    // Rotate feature highlights
+                    if (progress > 5 && progress < 33) {
+                        document.getElementById('feat-1').classList.add('active');
+                        document.getElementById('feat-2').classList.remove('active');
+                        document.getElementById('feat-3').classList.remove('active');
+                    } else if (progress >= 33 && progress < 66) {
+                        document.getElementById('feat-1').classList.remove('active');
+                        document.getElementById('feat-2').classList.add('active');
+                        document.getElementById('feat-3').classList.remove('active');
+                    } else if (progress >= 66) {
+                        document.getElementById('feat-1').classList.remove('active');
+                        document.getElementById('feat-2').classList.remove('active');
+                        document.getElementById('feat-3').classList.add('active');
+                    }
+
+                    const nextDelay = (progress < 25) ? 500 : (Math.floor(Math.random() * 200) + 150);
                     setTimeout(updateLoader, nextDelay);
                 } else {
-                    // Loading complete
                     finishLoading();
                 }
             };

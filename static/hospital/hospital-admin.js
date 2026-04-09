@@ -334,6 +334,7 @@
             const batch = firestore.batch();
             const rtdbUpdates = {};
             const timestamp = new Date().toISOString();
+            const newInv = {};
 
             bloodTypes.forEach(type => {
                 const input = document.getElementById(`inv_${type}`);
@@ -351,27 +352,46 @@
                     }, { merge: true });
 
                     // Prepare RTDB update
-                    rtdbUpdates[`${type}/units`] = units;
-                    rtdbUpdates[`${type}/lastUpdated`] = timestamp;
+                    rtdbUpdates[type] = { 
+                        units: units, 
+                        lastUpdated: timestamp 
+                    };
+                    newInv[type] = { units, lastUpdated: timestamp };
                 }
             });
 
             // 1. Commit Firestore updates
             await batch.commit();
+            console.log('✅ Firestore inventory updated for hospital:', emailKey);
 
             // 2. Sync to Realtime Database for Super Admin & Mobile App visibility
             if (window.database && currentBankId) {
                 try {
                     await database.ref(`bloodBanks/${currentBankId}/inventory`).update(rtdbUpdates);
                     await database.ref(`bloodBanks/${currentBankId}`).update({
-                        updatedAt: timestamp
+                        updatedAt: timestamp,
+                        lastSyncFrom: 'hospital_admin'
                     });
-                    console.log('RTDB Inventory synced for bank:', currentBankId);
+                    console.log('✅ RTDB Inventory synced for bank:', currentBankId);
+                    
+                    // Use the Inventory Sync Service for real-time sync
+                    if (window.InventorySyncService) {
+                        // Start real-time sync to keep inventory synchronized
+                        window.InventorySyncService.startSync(currentHospital.email, currentBankId);
+                        
+                        // Force immediate sync to ensure consistency
+                        await window.InventorySyncService.forceSync(
+                            currentHospital.email, 
+                            currentBankId, 
+                            'firestore_to_rtdb'
+                        );
+                    }
                 } catch (rtdbError) {
-                    console.error('RTDB Sync failed:', rtdbError);
+                    console.error('❌ RTDB Sync failed:', rtdbError);
+                    // Don't fail the whole operation - Firestore is the hospital admin's master
                 }
             } else if (!currentBankId) {
-                console.warn('Could not find matching bank in RTDB to sync inventory (currentBankId is null)');
+                console.warn('⚠️ Could not find matching bank in RTDB to sync inventory (currentBankId is null)');
             }
 
             // Log audit event
@@ -379,7 +399,9 @@
                 await window.auditLogs.actions.updateInventory(emailKey, {
                     hospitalName: currentHospital.name,
                     bloodTypes: bloodTypes.length,
-                    updatedBy: currentHospital.email
+                    updatedBy: currentHospital.email,
+                    syncedToRTDB: true,
+                    inventory: newInv
                 });
             }
 
@@ -387,7 +409,7 @@
             closeInventoryModal();
 
         } catch (error) {
-            console.error('Inventory update error:', error);
+            console.error('❌ Inventory update error:', error);
             window.utils.showNotification('Failed to update inventory: ' + error.message, 'error');
         }
     }

@@ -113,8 +113,8 @@
                     role: role,
                     hospitalName: window.hospitalData?.name || (role === 'hospital_admin' ? 'Associated Hospital' : 'Super Admin')
                 },
-                timestamp: firestore.FieldValue ? firestore.FieldValue.serverTimestamp() : new Date().toISOString(),
-                timestampISO: new Date().toISOString(),
+                timestamp: firestore.FieldValue ? firestore.FieldValue.serverTimestamp() : firebase.firestore.FieldValue.serverTimestamp(),  // ✅ Logical time
+                timestampISO: new Date().toISOString(),  // Fallback for sorting
                 severity: severity,
                 metadata: {
                     userAgent: navigator.userAgent,
@@ -236,6 +236,8 @@
                 return [];
             }
 
+            console.log('📱 Fetching user activity logs from mobile app...');
+
             let query = firestore.collection('user_activity_logs')
                 .orderBy('timestamp', 'desc')
                 .limit(AUDIT_CONFIG.maxEntriesPerLoad);
@@ -264,19 +266,73 @@
             const logs = [];
 
             snapshot.forEach(doc => {
+                const data = doc.data();
                 logs.push({
                     id: doc.id,
-                    ...doc.data(),
-                    logSource: 'user_app' // Distinguish from admin logs
+                    activityType: data.activityType,
+                    user: data.user || {},
+                    data: data.data || {},
+                    timestamp: data.timestamp,
+                    timestampISO: data.timestampISO,
+                    severity: data.severity || 'info',
+                    device: data.device || {},
+                    metadata: data.metadata || {},
+                    logSource: 'user_app', // Distinguish from admin logs
+                    resourceType: getUserActivityResourceType(data.activityType),
+                    action: data.activityType,
+                    resourceId: data.user?.uid || 'none'
                 });
             });
 
+            console.log(`✅ Fetched ${logs.length} user activity logs`);
             return logs;
 
         } catch (error) {
             console.error('Failed to fetch user activity logs:', error);
             return [];
         }
+    }
+
+    /**
+     * Map user activity types to resource types for filtering
+     */
+    function getUserActivityResourceType(activityType) {
+        const resourceMap = {
+            'auth_login': 'user',
+            'auth_logout': 'user',
+            'auth_register': 'user',
+            'auth_password_reset': 'user',
+            'profile_update': 'user',
+            'profile_view': 'user',
+            'profile_delete': 'user',
+            'request_create': 'blood_request',
+            'request_view': 'blood_request',
+            'request_update': 'blood_request',
+            'request_cancel': 'blood_request',
+            'request_accepted': 'blood_request',
+            'request_completed': 'blood_request',
+            'donor_register': 'donor',
+            'donor_verification_submit': 'donor',
+            'donor_accept_request': 'donor',
+            'donor_update_availability': 'donor',
+            'search_donors': 'donor',
+            'search_blood_banks': 'blood_bank',
+            'view_nearby_requests': 'blood_request',
+            'notification_view': 'notification',
+            'notification_dismiss': 'notification',
+            'chat_send_message': 'chat',
+            'chat_view_conversation': 'chat',
+            'referral_create': 'referral',
+            'referral_view': 'referral',
+            'referral_accept': 'referral',
+            'app_open': 'system',
+            'app_close': 'system',
+            'feature_access': 'system',
+            'error_occurred': 'system',
+            'permission_granted': 'system',
+            'permission_denied': 'system'
+        };
+        return resourceMap[activityType] || 'user_activity';
     }
 
     /**
@@ -434,61 +490,61 @@
         const data = log.data || {};
         const user = log.user || {};
 
-        // Map activity types to readable descriptions
+        // Map activity types to readable descriptions - comprehensive list
         const activityDescriptions = {
             // Authentication
-            'auth_login': `User logged in from mobile app`,
-            'auth_logout': `User logged out`,
-            'auth_register': `New user registered: ${user.email || 'Unknown'}`,
-            'auth_password_reset': `Password reset requested`,
+            'auth_login': `<strong>📱 Login</strong> - User logged in from mobile app${user.email ? ` (${user.email})` : ''}`,
+            'auth_logout': `<strong>👋 Logout</strong> - User logged out`,
+            'auth_register': `<strong>✨ New Registration</strong> - ${user.email || 'Unknown user'} registered`,
+            'auth_password_reset': `<strong>🔑 Password Reset</strong> - Password reset requested`,
 
             // Profile
-            'profile_view': `User viewed their profile`,
-            'profile_update': `User updated their profile information`,
-            'profile_delete': `⚠️ User deleted their profile`,
+            'profile_view': `<strong>👁️ Profile View</strong> - User viewed their profile`,
+            'profile_update': `<strong>✏️ Profile Update</strong> - User updated their profile information`,
+            'profile_delete': `<strong>⚠️ Profile Deleted</strong> - User deleted their profile`,
 
             // Blood Requests
-            'request_create': `🩸 Blood request created: <strong>${data.bloodType}</strong> (${data.urgency || 'moderate'}) at ${data.hospital || 'Unknown hospital'}`,
-            'request_view': `User viewed blood request details`,
-            'request_update': `User updated their blood request`,
-            'request_cancel': `Blood request cancelled`,
-            'request_accepted': `✅ Donor accepted blood request`,
-            'request_completed': `✅ Blood request completed successfully`,
+            'request_create': `<strong>🩸 Blood Request Created</strong> - Type: <strong>${data.bloodType || 'Unknown'}</strong>, Urgency: ${data.urgency || 'moderate'}${data.hospital ? ` at ${data.hospital}` : ''}`,
+            'request_view': `<strong>👁️ Request Viewed</strong> - User viewed blood request details`,
+            'request_update': `<strong>✏️ Request Updated</strong> - User updated their blood request`,
+            'request_cancel': `<strong>❌ Request Cancelled</strong> - Blood request was cancelled`,
+            'request_accepted': `<strong>✅ Request Accepted</strong> - Donor accepted the blood request`,
+            'request_completed': `<strong>✅ Request Completed</strong> - Blood request completed successfully`,
 
             // Donor Activities
-            'donor_register': `New donor registered: Blood type ${data.bloodType || 'Unknown'}`,
-            'donor_verification_submit': `Donor submitted verification documents`,
-            'donor_accept_request': `🎯 Donor accepted a blood request`,
-            'donor_update_availability': `Donor ${data.isAvailable ? 'marked as available' : 'marked as unavailable'}`,
+            'donor_register': `<strong>🩸 New Donor</strong> - Donor registered with blood type ${data.bloodType || 'Unknown'}`,
+            'donor_verification_submit': `<strong>📄 Verification Submitted</strong> - Donor submitted verification documents`,
+            'donor_accept_request': `<strong>🎯 Request Accepted</strong> - Donor accepted a blood request`,
+            'donor_update_availability': `<strong>🔄 Availability Updated</strong> - Donor ${data.isAvailable ? 'marked as <strong>available</strong>' : 'marked as <strong>unavailable</strong>'}`,
 
             // Search & Discovery
-            'search_donors': `User searched for donors${data.filters?.bloodType ? ` (Blood type: ${data.filters.bloodType})` : ''}`,
-            'search_blood_banks': `User searched for blood banks${data.location ? ` near ${data.location}` : ''}`,
-            'view_nearby_requests': `User viewed nearby blood requests`,
+            'search_donors': `<strong>🔍 Donor Search</strong> - User searched for donors${data.filters?.bloodType ? ` (Blood type: ${data.filters.bloodType})` : ''}`,
+            'search_blood_banks': `<strong>🔍 Blood Bank Search</strong> - User searched for blood banks${data.location ? ` near ${data.location}` : ''}`,
+            'view_nearby_requests': `<strong>📍 Nearby Requests</strong> - User viewed nearby blood requests`,
 
             // Notifications
-            'notification_view': `User viewed notification`,
-            'notification_dismiss': `User dismissed notification`,
+            'notification_view': `<strong>🔔 Notification Viewed</strong> - User viewed notification`,
+            'notification_dismiss': `<strong>✖️ Notification Dismissed</strong> - User dismissed notification`,
 
             // Chat
-            'chat_send_message': `User sent a message in chat`,
-            'chat_view_conversation': `User viewed chat conversation`,
+            'chat_send_message': `<strong>💬 Message Sent</strong> - User sent a message in chat`,
+            'chat_view_conversation': `<strong>👁️ Chat Viewed</strong> - User viewed chat conversation`,
 
             // Referrals
-            'referral_create': `🔗 Referral created for ${data.patientName || 'patient'} to ${data.targetHospital || 'Unknown hospital'}`,
-            'referral_view': `User viewed referral details`,
-            'referral_accept': `✅ Referral accepted`,
+            'referral_create': `<strong>🔗 Referral Created</strong> - For ${data.patientName || 'patient'} to ${data.targetHospital || 'Unknown hospital'}`,
+            'referral_view': `<strong>👁️ Referral Viewed</strong> - User viewed referral details`,
+            'referral_accept': `<strong>✅ Referral Accepted</strong> - Referral was accepted`,
 
             // System
-            'app_open': `User opened the app`,
-            'app_close': `User closed the app`,
-            'feature_access': `User accessed feature: ${data.feature || 'Unknown'}`,
-            'error_occurred': `❌ Error: ${data.error || 'Unknown error'}`,
-            'permission_granted': `User granted ${data.permission || 'Unknown'} permission`,
-            'permission_denied': `⚠️ User denied ${data.permission || 'Unknown'} permission`
+            'app_open': `<strong>📲 App Opened</strong> - User opened the app`,
+            'app_close': `<strong>📴 App Closed</strong> - User closed the app`,
+            'feature_access': `<strong>🎯 Feature Access</strong> - User accessed: ${data.feature || 'Unknown feature'}`,
+            'error_occurred': `<strong>❌ Error</strong> - ${data.error || 'Unknown error occurred'}`,
+            'permission_granted': `<strong>✅ Permission Granted</strong> - User granted ${data.permission || 'Unknown'} permission`,
+            'permission_denied': `<strong>⚠️ Permission Denied</strong> - User denied ${data.permission || 'Unknown'} permission`
         };
 
-        return activityDescriptions[activityType] || `User activity: ${activityType}`;
+        return activityDescriptions[activityType] || `<strong>📱 Activity</strong> - ${activityType}`;
     }
 
     /**

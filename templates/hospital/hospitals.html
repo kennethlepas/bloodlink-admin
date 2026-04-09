@@ -581,6 +581,16 @@
         const filtered = applyFilters();
         updateStats();
         renderTable(filtered);
+
+        // --- Cache results for instant next-load ---
+        try {
+            if (banks.length > 0) {
+                localStorage.setItem('hospitals_cache', JSON.stringify({
+                    banks: banks,
+                    timestamp: Date.now()
+                }));
+            }
+        } catch (e) { console.warn('Cache write failed', e); }
     }
 
     function updateStats() {
@@ -590,20 +600,6 @@
         document.getElementById("statTotal").textContent = totalBanks.length;
         document.getElementById("statWithStock").textContent = withStock.length;
         document.getElementById("statCritical").textContent = critical.length;
-    }
-
-    function updateUI() {
-        const filtered = applyFilters();
-        updateStats();
-        renderTable(filtered);
-
-        // --- Cache results for instant next-load ---
-        try {
-            localStorage.setItem('hospitals_cache', JSON.stringify({
-                banks: banks,
-                timestamp: Date.now()
-            }));
-        } catch (e) { console.warn('Cache write failed', e); }
     }
 
     function isMe(b) {
