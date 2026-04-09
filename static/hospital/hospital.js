@@ -94,18 +94,37 @@
 
         try {
             window.utils.showNotification('Saving inventory...', 'info');
+            
+            // Update RTDB
             await database.ref(`bloodBanks/${currentBankId}/inventory`).update(newInventory);
-            await database.ref(`bloodBanks/${currentBankId}`).update({ updatedAt: timestamp });
+            await database.ref(`bloodBanks/${currentBankId}`).update({ 
+                updatedAt: timestamp,
+                lastSyncFrom: 'hospital_admin'
+            });
+
+            // Sync to Firestore using Inventory Sync Service
+            if (window.InventorySyncService && hospitalData && hospitalData.email) {
+                const emailKey = hospitalData.email.replace(/\./g, ',');
+                await window.InventorySyncService.syncFromRTDBToFirestore(
+                    emailKey,
+                    newInventory,
+                    'hospital_admin'
+                );
+                
+                // Start real-time sync
+                window.InventorySyncService.startSync(hospitalData.email, currentBankId);
+            }
 
             // Log audit event
             if (window.auditLogs && window.auditLogs.actions) {
                 window.auditLogs.actions.updateInventory(currentBankId, {
                     inventory: newInventory,
-                    hospitalName: hospitalData?.name
+                    hospitalName: hospitalData?.name,
+                    syncedToFirestore: true
                 });
             }
 
-            window.utils.showNotification('Inventory updated successfully', 'success');
+            window.utils.showNotification('Inventory updated successfully and synced', 'success');
             closeInventoryModal();
         } catch (error) {
             console.error('Error saving inventory:', error);
