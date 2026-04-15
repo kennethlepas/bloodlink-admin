@@ -1233,6 +1233,18 @@
         await showPreview('users', await prepareUsersData(), ['Full Name', 'Role', 'Status', 'Verified']);
     };
 
+    window.previewBookingsReport = async function () {
+        await showPreview('bookings', await prepareBookingsData(), ['Type', 'Patient/Donor', 'Hospital', 'Date', 'Status']);
+    };
+
+    window.previewReferralsReport = async function () {
+        await showPreview('referrals', await prepareReferralsData(), ['Patient', 'From', 'To', 'Urgency', 'Status']);
+    };
+
+    window.previewChatsReport = async function () {
+        await showPreview('chats', await prepareChatsData(), ['Participants', 'Last Message', 'Last Activity']);
+    };
+
     async function showPreview(type, data, displayFields) {
         const previewDiv = document.getElementById(`${type}Preview`);
         const contentDiv = document.getElementById(`${type}PreviewContent`);

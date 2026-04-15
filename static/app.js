@@ -80,8 +80,10 @@ elements.loginForm.addEventListener('submit', async (e) => {
 });
 
 elements.logoutBtn.addEventListener('click', async () => {
+    if (!confirm('Are you sure you want to logout?')) return;
     try {
         await auth.signOut();
+        window.location.href = '/?logout=true';
     } catch (error) {
         console.error('Logout error:', error);
         alert('Failed to logout. Please try again.');

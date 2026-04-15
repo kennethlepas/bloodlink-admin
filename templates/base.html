@@ -31,7 +31,7 @@
                 </div>
                 <div class="sidebar-branding">
                     <h1 class="sidebar-title" style="font-size: 18px; letter-spacing: -0.5px;">BloodLink</h1>
-                    <p class="sidebar-tagline">Super Admin Portal</p>
+                    <p class="sidebar-tagline">Super Admin Portal 🇰🇪</p>
                 </div>
                 <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle Sidebar">
                     <span></span>
@@ -120,6 +120,12 @@
                     data-screen="system-config" data-roles="super_admin">
                     <span class="nav-icon">🛠️</span>
                     <span class="nav-label">System Config</span>
+                </a>
+                <a href="https://blood-link-webguide.vercel.app/" target="_blank" rel="noopener noreferrer"
+                    class="nav-item" data-screen="userguide" data-roles="super_admin, hospital_admin">
+                    <span class="nav-icon">📖</span>
+                    <span class="nav-label">User Guide</span>
+                    <span style="margin-left: auto; font-size: 10px; opacity: 0.5;">↗</span>
                 </a>
 
                 <a href="/settings" class="nav-item {% if request.path == '/settings' %}active{% endif %}"
@@ -566,7 +572,7 @@
     <script src="{{ url_for('static', filename='audit-logs.js') }}"></script>
     <script src="{{ url_for('static', filename='admin-policies.js') }}"></script>
     <script src="{{ url_for('static', filename='page-transitions.js') }}"></script>
-    
+
     <!-- Inventory Sync Service -->
     <script src="{{ url_for('static', filename='inventory-sync-service.js') }}"></script>
     <script src="{{ url_for('static', filename='inventory-sync-status.js') }}"></script>

@@ -346,6 +346,7 @@
     // Render donor details with complete donation history
     function renderDonorDetails(donor) {
         const fullName = `${donor.firstName || ''} ${donor.lastName || ''}`.trim() || 'Unknown';
+        const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
         const joinedDate = donor.createdAt ? new Date(donor.createdAt).toLocaleDateString('en-KE', {
             year: 'numeric', month: 'long', day: 'numeric'
         }) : 'Unknown';
@@ -373,74 +374,83 @@
         const availText = donor.isAvailable ? 'Available' : 'Unavailable';
 
         return `
-            <div class="donor-stats-cards">
+            <div class="donor-detail-hero">
+                <div class="donor-avatar-large">${initials}</div>
+                <div class="donor-meta-info">
+                    <h2 class="donor-meta-name">${escapeHtml(fullName)}</h2>
+                    <div class="donor-meta-badges">
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                        <span class="status-badge ${availClass}">${availText}</span>
+                        ${badge ? `<span class="donor-badge ${badge.class}">${badge.text}</span>` : ''}
+                    </div>
+                </div>
+                <div class="donor-blood-stat">
+                    <p style="font-size: 11px; text-transform: uppercase; font-weight: 700; opacity: 0.7; margin: 0;">Blood Type</p>
+                    <h3 class="donor-blood-type-huge">${donor.bloodType || '—'}</h3>
+                </div>
+            </div>
+
+            <div class="donor-stats-cards" style="margin-bottom: 32px;">
                 <div class="donor-stat-card">
                     <div class="stat-number">${stats.totalDonations}</div>
-                    <div class="stat-label">Total Donations</div>
+                    <div class="stat-label">Donations</div>
                 </div>
                 <div class="donor-stat-card">
-                    <div class="stat-number">⭐ ${stats.totalPoints}</div>
+                    <div class="stat-number">${stats.totalPoints}</div>
                     <div class="stat-label">Impact Points</div>
                 </div>
                 <div class="donor-stat-card">
-                    <div class="stat-number">${stats.totalUnits}</div>
-                    <div class="stat-label">Units Donated</div>
-                </div>
-                <div class="donor-stat-card">
                     <div class="stat-number">${stats.livesImpacted}</div>
-                    <div class="stat-label">Lives Impacted</div>
+                    <div class="stat-label">Lives Saved</div>
                 </div>
             </div>
-            
-            <div class="details-grid">
-                <div class="detail-item">
-                    <label>Full Name</label>
-                    <span>${escapeHtml(fullName)}</span>
+
+            <div class="donor-section-group">
+                <h4 class="donor-section-title">👤 Personal Information</h4>
+                <div class="donor-info-grid">
+                    <div class="donor-info-item">
+                        <label>Full Name</label>
+                        <span>${escapeHtml(fullName)}</span>
+                    </div>
+                    <div class="donor-info-item">
+                        <label>Email Address</label>
+                        <span>${escapeHtml(donor.email || '—')}</span>
+                    </div>
+                    <div class="donor-info-item">
+                        <label>Phone Number</label>
+                        <span>${escapeHtml(donor.phoneNumber || '—')}</span>
+                    </div>
+                    <div class="donor-info-item">
+                        <label>Joined Date</label>
+                        <span>${joinedDate}</span>
+                    </div>
                 </div>
-                <div class="detail-item">
-                    <label>Email</label>
-                    <span>${escapeHtml(donor.email || '—')}</span>
-                </div>
-                <div class="detail-item">
-                    <label>Phone Number</label>
-                    <span>${escapeHtml(donor.phoneNumber || '—')}</span>
-                </div>
-                <div class="detail-item">
-                    <label>Blood Type</label>
-                    <span><span class="blood-type-badge ${getBloodTypeClass(donor.bloodType)}">${donor.bloodType || '—'}</span></span>
-                </div>
-                <div class="detail-item">
-                    <label>Weight</label>
-                    <span>${donor.weight ? `${donor.weight} kg` : '—'}</span>
-                </div>
-                <div class="detail-item">
-                    <label>Location</label>
-                    <span>${donor.county ? `${donor.county}${donor.town ? `, ${donor.town}` : ''}` : '—'}</span>
-                </div>
-                <div class="detail-item">
-                    <label>Donor Badge</label>
-                    <span>${badge ? `<span class="donor-badge ${badge.class}">${badge.text}</span>` : 'Regular Donor'}</span>
-                </div>
-                <div class="detail-item">
-                    <label>Next Eligibility</label>
-                    <span>${stats.nextEligibility ? stats.nextEligibility.toLocaleDateString() : 'Eligible now'}</span>
-                </div>
-                <div class="detail-item">
-                    <label>Joined Date</label>
-                    <span>${joinedDate}</span>
-                </div>
-                <div class="detail-item">
-                    <label>Verification Status</label>
-                    <span><span class="status-badge ${statusClass}">${statusText}</span></span>
-                </div>
-                <div class="detail-item">
-                    <label>Availability</label>
-                    <span><span class="status-badge ${availClass}">${availText}</span></span>
+            </div>
+
+            <div class="donor-section-group">
+                <h4 class="donor-section-title">🏥 Medical & Eligibility</h4>
+                <div class="donor-info-grid">
+                    <div class="donor-info-item">
+                        <label>Blood Type</label>
+                        <span><span class="blood-type-badge ${getBloodTypeClass(donor.bloodType)}">${donor.bloodType || '—'}</span></span>
+                    </div>
+                    <div class="donor-info-item">
+                        <label>Body Weight</label>
+                        <span>${donor.weight ? `${donor.weight} kg` : '—'}</span>
+                    </div>
+                    <div class="donor-info-item">
+                        <label>Next Eligibility</label>
+                        <span>${stats.nextEligibility ? stats.nextEligibility.toLocaleDateString() : 'Eligible now'}</span>
+                    </div>
+                    <div class="donor-info-item">
+                        <label>Location</label>
+                        <span>${donor.county ? `${donor.county}${donor.town ? `, ${donor.town}` : ''}` : '—'}</span>
+                    </div>
                 </div>
             </div>
             
             ${donor.verificationRejectionReason ? `
-                <div class="alert alert-danger" style="margin-top: 16px;">
+                <div class="alert alert-danger" style="margin-top: 16px; border-radius: 12px;">
                     <div class="alert-header">
                         <span class="alert-icon">⚠️</span>
                         <strong>Rejection Reason</strong>
@@ -451,15 +461,14 @@
             
             ${stats.allDonations.length > 0 ? `
                 <div class="batch-history" style="margin-top: 24px;">
-                    <h4>📊 Complete Donation History</h4>
+                    <h4 class="donor-section-title">📊 Donation History</h4>
                     <div style="overflow-x: auto;">
                         <table class="batch-table">
                             <thead>
                                 <tr>
                                     <th>Date</th>
-                                    <th>Location</th>
-                                    <th>Blood Type</th>
-                                    <th>Component</th>
+                                    <th>Facility</th>
+                                    <th>Type</th>
                                     <th>Units</th>
                                     <th>Points</th>
                                     <th>Status</th>
@@ -469,11 +478,10 @@
                                 ${stats.allDonations.map(donation => `
                                     <tr>
                                         <td>${new Date(donation.donationDate).toLocaleDateString()}</td>
-                                        <td>${escapeHtml(donation.bloodBankName || donation.location?.address || 'Medical Facility')}</td>
-                                        <td><span class="blood-type-badge ${getBloodTypeClass(donation.bloodType)}">${donation.bloodType}</span></td>
-                                        <td>${donation.bloodComponent || 'Whole Blood'}</td>
+                                        <td>${escapeHtml(donation.bloodBankName || 'Medical Facility')}</td>
+                                        <td>${donation.bloodType} (${donation.bloodComponent || 'Whole'})</td>
                                         <td>${donation.unitsCollected || 1}</td>
-                                        <td style="color: #D97706; font-weight: 600;">+${donation.pointsEarned || 50}</td>
+                                        <td style="color: #D97706; font-weight: 700;">+${donation.pointsEarned || 50}</td>
                                         <td><span class="status-badge status-verified">Completed</span></td>
                                     </tr>
                                 `).join('')}
@@ -481,7 +489,7 @@
                         </table>
                     </div>
                 </div>
-            ` : '<div class="empty-state" style="margin-top: 24px;"><p>No donation records yet</p></div>'}
+            ` : '<div class="empty-state" style="margin-top: 24px;"><p>No donation records found</p></div>'}
         `;
     }
 

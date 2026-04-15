@@ -562,6 +562,14 @@
                 <option value="O-">O-</option>
             </select>
 
+            <select id="filterCounty">
+                <option value="all">All Counties</option>
+            </select>
+
+            <select id="filterSubCounty">
+                <option value="all">All Sub-counties</option>
+            </select>
+
             <select id="filterVerified">
                 <option value="all">All Facilities</option>
                 <option value="verified">Verified Only</option>
@@ -648,6 +656,7 @@
             allBanks = snap.exists() ? snap.val() : {};
             banksArray = Object.entries(allBanks).map(([id, b]) => ({ id, ...b }));
             updateStats();
+            populateCountyFilter();
             applyFilters();
 
             // Finalize loading
@@ -655,6 +664,42 @@
                 window.loadingScreen.hide();
             }
         });
+
+        function populateCountyFilter() {
+            const countySelect = document.getElementById("filterCounty");
+            const counties = [...new Set(banksArray.map(b => b.county).filter(Boolean))].sort();
+
+            // Keep the "All Counties" option
+            countySelect.innerHTML = '<option value="all">All Counties</option>';
+            counties.forEach(c => {
+                const opt = document.createElement("option");
+                opt.value = c;
+                opt.textContent = c;
+                countySelect.appendChild(opt);
+            });
+        }
+
+        function populateSubCountyFilter(county) {
+            const subCountySelect = document.getElementById("filterSubCounty");
+
+            if (county === "all") {
+                subCountySelect.innerHTML = '<option value="all">All Sub-counties</option>';
+                return;
+            }
+
+            const subCounties = [...new Set(banksArray
+                .filter(b => b.county === county)
+                .map(b => b.subCounty)
+                .filter(Boolean))].sort();
+
+            subCountySelect.innerHTML = '<option value="all">All Sub-counties</option>';
+            subCounties.forEach(sc => {
+                const opt = document.createElement("option");
+                opt.value = sc;
+                opt.textContent = sc;
+                subCountySelect.appendChild(opt);
+            });
+        }
 
         function updateStats() {
             const withStock = banksArray.filter(b => Object.values(b.inventory || {}).some(v => (v?.units || 0) > 0));
@@ -668,13 +713,17 @@
             const s = document.getElementById("search").value.toLowerCase();
             const f = document.getElementById("filterBlood").value;
             const v = document.getElementById("filterVerified").value;
+            const c = document.getElementById("filterCounty").value;
+            const sc = document.getElementById("filterSubCounty").value;
 
             const rows = banksArray.filter(b => {
                 if (f !== "all" && (b.inventory?.[f]?.units || 0) === 0) return false;
                 if (v === "verified" && !b.isVerified) return false;
                 if (v === "unverified" && b.isVerified) return false;
+                if (c !== "all" && b.county !== c) return false;
+                if (sc !== "all" && b.subCounty !== sc) return false;
                 if (s) {
-                    const hay = [b.name, b.address, b.county, b.code].join(" ").toLowerCase();
+                    const hay = [b.name, b.address, b.county, b.subCounty, b.code].join(" ").toLowerCase();
                     if (!hay.includes(s)) return false;
                 }
                 return true;
@@ -794,11 +843,11 @@
                             // Use the Inventory Sync Service for better reliability
                             if (window.InventorySyncService) {
                                 await window.InventorySyncService.syncFromRTDBToFirestore(
-                                    emailKey, 
-                                    newInv, 
+                                    emailKey,
+                                    newInv,
                                     'super_admin'
                                 );
-                                
+
                                 // Start real-time sync if not already active
                                 window.InventorySyncService.startSync(bank.email, currentBankId);
                             } else {
@@ -883,7 +932,14 @@
                 showProgress(true, `Syncing ${i + 1}/${rows.length}`, Math.round(((i + 1) / rows.length) * 100));
                 const row = rows[i];
                 const name = row.name || row.officialname;
-                const data = { name, code: row.code, county: row.county, isVerified: true, updatedAt: new Date().toISOString() };
+                const data = {
+                    name,
+                    code: row.code,
+                    county: row.county,
+                    subCounty: row["sub county"] || row.subcounty || "",
+                    isVerified: true,
+                    updatedAt: new Date().toISOString()
+                };
                 const exId = Object.keys(allBanks).find(id => allBanks[id].code === row.code || allBanks[id].name === name);
                 if (exId) await update(ref(rtdb, `bloodBanks/${exId}`), data);
                 else {
@@ -912,9 +968,22 @@
         };
 
         // Filters
-        ["search", "filterBlood", "filterVerified"].forEach(id => {
-            document.getElementById(id).oninput = applyFilters;
-            document.getElementById(id).onchange = applyFilters;
+        ["search", "filterBlood", "filterVerified", "filterCounty", "filterSubCounty"].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+
+            el.oninput = () => {
+                if (id === "filterCounty") {
+                    populateSubCountyFilter(el.value);
+                }
+                applyFilters();
+            };
+            el.onchange = () => {
+                if (id === "filterCounty") {
+                    populateSubCountyFilter(el.value);
+                }
+                applyFilters();
+            };
         });
     </script>
     {% endblock %}

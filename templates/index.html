@@ -409,160 +409,197 @@
             text-align: left;
         }
 
-        .feature-item.active {
-            opacity: 1;
-            transform: translateY(0);
-            visibility: visible;
-        }
-
-        .feature-image-box {
-            flex: 0 0 300px;
-            height: 100%;
-            border-radius: 16px;
+        #appLoadingScreen {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: var(--color-primary);
+            background: var(--navy-gradient);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
             overflow: hidden;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
         }
 
-        .feature-image-box img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+        .loader-bg-animation {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            z-index: 1;
+            opacity: 0.4;
         }
 
-        .feature-text-box {
-            flex: 1;
+        .loader-bubble {
+            position: absolute;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: loader-float 20s infinite linear;
         }
 
-        .feature-text-box h2 {
-            font-size: 14px;
-            color: #C5283D;
-            text-transform: uppercase;
-            font-weight: 800;
-            letter-spacing: 2px;
-            margin-bottom: 12px;
+        @keyframes loader-float {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(100px, 100px) scale(1.2);
+            }
+
+            66% {
+                transform: translate(-50px, 200px) scale(0.8);
+            }
+
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
         }
 
-        .feature-text-box h3 {
-            font-size: 28px;
-            color: #1e293b;
+        .loader-content-wrap {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .loader-badge {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(4px);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
             font-weight: 700;
-            margin-bottom: 16px;
+            letter-spacing: 1px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .feature-text-box p {
-            font-size: 18px;
-            color: #64748b;
-            line-height: 1.6;
-            margin: 0;
+        #appLoadingScreen h1 {
+            font-size: clamp(24px, 5vw, 42px);
+            font-weight: 800;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+        }
+
+        #appLoadingScreen h1 span {
+            color: var(--color-accent);
+            position: relative;
+        }
+
+        .loader-subtitle {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.7);
+            max-width: 480px;
+            margin-bottom: 48px;
+            line-height: 1.5;
         }
 
         .loader-progress-area {
             width: 100%;
-            max-width: 500px;
+            max-width: 320px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 20px;
-        }
-
-        .loader-logo-mini {
-            width: 60px;
-            height: 60px;
-            background: white;
-            padding: 8px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            animation: pulseSimple 2s infinite ease-in-out;
-        }
-
-        .loader-logo-mini img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        @keyframes pulseSimple {
-
-            0%,
-            100% {
-                transform: scale(1);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            }
-
-            50% {
-                transform: scale(1.05);
-                box-shadow: 0 8px 24px rgba(37, 99, 235, 0.1);
-            }
+            gap: 16px;
         }
 
         .loader-bar-wrap {
             width: 100%;
-            height: 8px;
-            background: rgba(37, 99, 235, 0.1);
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 10px;
             overflow: hidden;
-            position: relative;
         }
 
         .loader-bar-fill {
             height: 100%;
             width: 0%;
-            background: linear-gradient(90deg, #2563EB, #C5283D);
+            background: #EF4444;
+            background: var(--accent-gradient);
             border-radius: 10px;
             transition: width 0.4s ease-out;
         }
 
         .loader-status {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
-            color: #64748b;
+            color: rgba(255, 255, 255, 0.6);
             height: 20px;
         }
 
         .loader-footer {
-            margin-top: auto;
+            margin-top: 60px;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 12px;
-            padding-top: 40px;
         }
 
-        .kenyan-flag {
-            width: 44px;
-            height: 28px;
+        .kenyan-flag-mini {
+            width: 32px;
+            height: 20px;
+            border-radius: 2px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             display: flex;
             flex-direction: column;
-            border-radius: 4px;
-            overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .flag-black {
+            flex: 1;
+            background: #000000;
+            position: relative;
+        }
+
+        .flag-red {
+            flex: 1;
+            background: #BB0000;
+            border-top: 2px solid white;
+            border-bottom: 2px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .flag-green {
+            flex: 1;
+            background: #006600;
+        }
+
+        .flag-shield {
+            width: 8px;
+            height: 10px;
+            background: #BB0000;
+            border: 1px solid white;
+            border-radius: 50% 50% 50% 50%;
         }
 
         .loader-branding {
-            font-size: 12px;
-            font-weight: 700;
-            color: #94a3b8;
-            letter-spacing: 3px;
+            font-size: 10px;
+            font-weight: 800;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 4px;
             text-transform: uppercase;
         }
 
+        /* Feature display - hidden in simple loader */
+        .loader-feature-display {
+            display: none;
+        }
+
         @media (max-width: 900px) {
-            .feature-item {
-                flex-direction: column;
-                height: auto;
-                text-align: center;
-                gap: 20px;
+            #appLoadingScreen h1 {
+                font-size: 32px;
             }
 
-            .feature-image-box {
-                flex: none;
-                width: 100%;
-                height: 180px;
-            }
-
-            .loader-feature-display {
-                height: auto;
-                min-height: 400px;
+            .loader-subtitle {
+                font-size: 14px;
             }
         }
 
@@ -585,75 +622,33 @@
         </div>
 
         <div class="loader-content-wrap">
-            <div class="loader-badge">SECURE ADMIN ACCESS</div>
-            <h1>Welcome to <span>BloodLink</span> Admin Portal</h1>
-            <p class="loader-subtitle">Empowering healthcare facilities with real-time coordination and donor
-                management.</p>
+            <div class="loader-card">
+                <div class="loader-logo-container">
+                    <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="BloodLink Logo"
+                        class="loader-logo-img">
+                </div>
 
-            <div class="loader-feature-display">
-                <!-- Theme 1: Impact -->
-                <div class="feature-item" id="feat-1">
-                    <div class="feature-image-box">
-                        <img src="{{ url_for('static', filename='images/blog_impact.jpg') }}" alt="Impact">
-                    </div>
-                    <div class="feature-text-box">
-                        <h2>Impact</h2>
-                        <h3>Saving Lives Together</h3>
-                        <p>One single donation can save up to three lives. Your work today facilitates this life-saving
-                            cycle.</p>
+                <h1 class="loader-title">BloodLink <span>Admin</span></h1>
+
+                <div class="loader-progress-container">
+                    <div class="loader-bar-bg">
+                        <div class="loader-bar-fill" id="loaderBarFill"></div>
                     </div>
                 </div>
 
-                <!-- Theme 2: Network -->
-                <div class="feature-item" id="feat-2">
-                    <div class="feature-image-box">
-                        <img src="{{ url_for('static', filename='images/blog_network.jpg') }}" alt="Network">
-                    </div>
-                    <div class="feature-text-box">
-                        <h2>Network</h2>
-                        <h3>Nationwide Reach</h3>
-                        <p>Real-time inventory synchronization between 450+ healthcare facilities nationally across all
-                            47 counties.</p>
-                    </div>
+                <div class="loader-status-badge">
+                    <span class="status-dot-blinking"></span>
+                    <span id="loaderStatus">Secure Admin Access · 🇰🇪</span>
                 </div>
 
-                <!-- Theme 3: Innovation -->
-                <div class="feature-item" id="feat-3">
-                    <div class="feature-image-box">
-                        <img src="{{ url_for('static', filename='images/blog_innovation.jpg') }}" alt="Innovation">
-                    </div>
-                    <div class="feature-text-box">
-                        <h2>Innovation</h2>
-                        <h3>Smart Coordination</h3>
-                        <p>AI-driven donor matching algorithm prioritizing urgent and critical surgical needs for faster
-                            response.</p>
-                    </div>
+                <div class="loader-message-wrap">
+                    <p id="loadingMessage">Connecting to BloodLink...</p>
                 </div>
             </div>
 
-            <div class="loader-progress-area">
-                <div class="loader-logo-mini">
-                    <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo">
-                </div>
-                <div class="loader-bar-wrap">
-                    <div class="loader-bar-fill" id="loaderFill"></div>
-                </div>
-                <div class="loader-status" id="loaderStatus">Initializing secure session...</div>
+            <div class="loader-branding-bottom">
+                BLOODLINK · SAVING LIVES IN KENYA 🇰🇪
             </div>
-        </div>
-
-        <div class="loader-footer">
-            <div class="kenyan-flag">
-                <div class="flag-black" style="flex:1"></div>
-                <div class="flag-red"
-                    style="flex:1; border-top:1.5px solid #fff; border-bottom:1.5px solid #fff; position:relative">
-                    <div class="flag-shield"
-                        style="width:6px; height:10px; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); border:1px solid #fff; background:#BB0613; border-radius:50%/40%">
-                    </div>
-                </div>
-                <div class="flag-green" style="flex:1"></div>
-            </div>
-            <div class="loader-branding">BLOODLINK · SAVING LIVES IN KENYA</div>
         </div>
     </div>
 
@@ -703,14 +698,7 @@
                         style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px;">
                         <p style="margin: 0; font-size: 11px; opacity: 0.85; color: #1E40AF;">Secure admin access &bull;
                             BloodLink &copy; 2026</p>
-                        <div class="kenya-flag"
-                            style="margin: 0; width: 18px; height: 12px; box-shadow: none; opacity: 0.9;">
-                            <div class="flag-stripe flag-black"></div>
-                            <div class="flag-red">
-                                <div class="flag-shield" style="width: 6px; height: 8px;"></div>
-                            </div>
-                            <div class="flag-stripe flag-green"></div>
-                        </div>
+                        <span style="font-size: 14px;">🇰🇪</span>
                     </div>
                 </div>
             </div>
@@ -820,13 +808,7 @@
 
         <!-- Subtle brand tag at screen bottom -->
         <div class="welcome-brand">
-            <div class="kenya-flag" style="width: 20px; height: 13px; margin-right: 4px; box-shadow: none;">
-                <div class="flag-stripe flag-black"></div>
-                <div class="flag-red">
-                    <div class="flag-shield" style="width: 6px; height: 8px;"></div>
-                </div>
-                <div class="flag-stripe flag-green"></div>
-            </div>
+            <span style="font-size: 14px; margin-right: 4px;">🇰🇪</span>
             <span></span>
             BloodLink · Saving Lives in Kenya
         </div>
@@ -843,7 +825,7 @@
     <script>
         (function () {
             const loader = document.getElementById('appLoadingScreen');
-            const fill = document.getElementById('loaderFill');
+            const fill = document.getElementById('loaderBarFill');
             const loginContainer = document.getElementById('loginContainer');
 
             const messages = [
@@ -860,42 +842,23 @@
             let progress = 0;
             const statusText = document.getElementById('loaderStatus');
 
-            // Advance progress and features
+            // Advance progress
             const updateLoader = () => {
                 if (progress < 100) {
-                    let jump;
-                    if (progress < 25) {
-                        jump = Math.floor(Math.random() * 2) + 1; // Slower start
-                    } else {
-                        jump = Math.floor(Math.random() * 4) + 2;
-                    }
-
+                    let jump = (progress < 25) ? Math.floor(Math.random() * 2) + 1 : Math.floor(Math.random() * 4) + 2;
                     progress = Math.min(100, progress + jump);
-                    fill.style.width = progress + '%';
+                    if (fill) fill.style.width = progress + '%';
 
                     // Update status messages
-                    if (progress > (currentMessageIndex + 1) * 20 && currentMessageIndex < messages.length - 1) {
+                    if (progress > (currentMessageIndex + 1) * 14 && currentMessageIndex < messages.length - 1) {
                         currentMessageIndex++;
-                        statusText.style.opacity = 0;
-                        setTimeout(() => {
-                            statusText.textContent = messages[currentMessageIndex];
-                            statusText.style.opacity = 1;
-                        }, 200);
-                    }
-
-                    // Rotate feature highlights
-                    if (progress > 5 && progress < 33) {
-                        document.getElementById('feat-1').classList.add('active');
-                        document.getElementById('feat-2').classList.remove('active');
-                        document.getElementById('feat-3').classList.remove('active');
-                    } else if (progress >= 33 && progress < 66) {
-                        document.getElementById('feat-1').classList.remove('active');
-                        document.getElementById('feat-2').classList.add('active');
-                        document.getElementById('feat-3').classList.remove('active');
-                    } else if (progress >= 66) {
-                        document.getElementById('feat-1').classList.remove('active');
-                        document.getElementById('feat-2').classList.remove('active');
-                        document.getElementById('feat-3').classList.add('active');
+                        if (statusText) {
+                            statusText.style.opacity = 0;
+                            setTimeout(() => {
+                                statusText.textContent = `${messages[currentMessageIndex]} · 🇰🇪`;
+                                statusText.style.opacity = 1;
+                            }, 200);
+                        }
                     }
 
                     const nextDelay = (progress < 25) ? 500 : (Math.floor(Math.random() * 200) + 150);
@@ -926,7 +889,15 @@
 
             // Start simulation after brief delay
             window.addEventListener('load', () => {
-                setTimeout(updateLoader, 300);
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('logout') === 'true') {
+                    // Skip loading screen on logout
+                    loginContainer.classList.remove('hidden');
+                    loader.remove();
+                    document.body.classList.remove('loading-active');
+                } else {
+                    setTimeout(updateLoader, 300);
+                }
             });
         })();
     </script>

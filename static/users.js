@@ -217,6 +217,7 @@
 
     // Toggle user active status
     window.toggleUserStatus = async function (uid, newStatus, name) {
+        const user = allUsers.find(u => u.id === uid);
         const action = newStatus ? 'Reactivate' : 'Revoke access for';
         if (!window.utils.confirmAction(`${action} ${name}?`)) return;
 
@@ -225,6 +226,19 @@
                 isActive: newStatus,
                 updatedAt: new Date().toISOString()
             });
+
+            // If hospital admin, also update the hospital lock status for redundancy
+            if (user && user.userType === 'hospital') {
+                try {
+                    await firestore.collection('hospitals').doc(uid).update({
+                        locked: !newStatus,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    console.log('🏛️ Hospital lock status synchronized for:', uid);
+                } catch (hErr) {
+                    console.warn('Failed to sync hospital lock status:', hErr);
+                }
+            }
 
             // Log audit event
             if (window.auditLogs && window.auditLogs.actions) {

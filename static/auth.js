@@ -119,10 +119,19 @@
                     const progressFill = document.getElementById('pageLoadingBar');
                     if (progressFill) progressFill.style.width = '0%';
 
-                    // Check role and lock status
+                    // Check role and status
                     const emailKey = user.email.replace(/\./g, ',');
                     let role = null;
                     let userData = null;
+
+                    // --- 0. Global Suspension Check ---
+                    // Check if account is active in the universal 'users' collection
+                    const userGlobalSnap = await firestore.collection('users').doc(emailKey).get();
+                    if (userGlobalSnap.exists && userGlobalSnap.data().isActive === false) {
+                        window.utils.showNotification('Your account has been deactivated. Please contact the administrator.', 'error');
+                        await auth.signOut();
+                        return;
+                    }
 
                     // 1. Check Super Admins
                     const adminSnapshot = await database.ref(`admins/${emailKey}`).once('value');
@@ -664,6 +673,8 @@
 
         // Logout Handler
         const logoutActions = async () => {
+            if (!confirm('Are you sure you want to logout?')) return;
+
             if (window.auditLogs) {
                 await window.auditLogs.actions.logout();
             }
@@ -672,7 +683,7 @@
             sessionStorage.clear();
 
             await auth.signOut();
-            window.location.href = '/';
+            window.location.href = '/?logout=true';
         };
 
         if (elements.logoutBtn) {

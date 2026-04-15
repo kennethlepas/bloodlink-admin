@@ -403,6 +403,17 @@
                 <button class="btn-secondary" onclick="exportBookingsExcel()">
                     <span>📊</span> Export to Excel
                 </button>
+                <button class="btn-secondary" onclick="previewBookingsReport()">
+                    <span>👁️</span> Preview
+                </button>
+            </div>
+
+            <div id="bookingsPreview" class="report-preview" style="display: none;">
+                <div class="preview-header">
+                    <h4>📋 Report Preview</h4>
+                    <button class="close-preview" onclick="closePreview('bookings')">✕</button>
+                </div>
+                <div id="bookingsPreviewContent" class="preview-content"></div>
             </div>
         </div>
     </div>
@@ -459,6 +470,17 @@
                 <button class="btn-secondary" onclick="exportReferralsExcel()">
                     <span>📊</span> Export to Excel
                 </button>
+                <button class="btn-secondary" onclick="previewReferralsReport()">
+                    <span>👁️</span> Preview
+                </button>
+            </div>
+
+            <div id="referralsPreview" class="report-preview" style="display: none;">
+                <div class="preview-header">
+                    <h4>📋 Report Preview</h4>
+                    <button class="close-preview" onclick="closePreview('referrals')">✕</button>
+                </div>
+                <div id="referralsPreviewContent" class="preview-content"></div>
             </div>
         </div>
     </div>
@@ -496,6 +518,17 @@
                 <button class="btn-secondary" onclick="exportChatsExcel()">
                     <span>📊</span> Export to Excel
                 </button>
+                <button class="btn-secondary" onclick="previewChatsReport()">
+                    <span>👁️</span> Preview
+                </button>
+            </div>
+
+            <div id="chatsPreview" class="report-preview" style="display: none;">
+                <div class="preview-header">
+                    <h4>📋 Report Preview</h4>
+                    <button class="close-preview" onclick="closePreview('chats')">✕</button>
+                </div>
+                <div id="chatsPreviewContent" class="preview-content"></div>
             </div>
         </div>
     </div>

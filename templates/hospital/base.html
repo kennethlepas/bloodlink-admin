@@ -31,7 +31,7 @@
                 </div>
                 <div class="sidebar-branding">
                     <h1 class="sidebar-title" style="font-size: 18px; letter-spacing: -0.5px;">BloodLink</h1>
-                    <p class="sidebar-tagline" id="hospitalNameDisplay">Hospital Admin</p>
+                    <p class="sidebar-tagline" id="hospitalNameDisplay">Hospital Admin 🇰🇪</p>
                 </div>
                 <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle Sidebar">
                     <span></span>
@@ -93,6 +93,12 @@
                     data-screen="hospital_chat">
                     <span class="nav-icon">💬</span>
                     <span class="nav-label">Chat</span>
+                </a>
+                <a href="https://blood-link-webguide.vercel.app/" target="_blank" rel="noopener noreferrer"
+                    class="nav-item" data-screen="userguide">
+                    <span class="nav-icon">📖</span>
+                    <span class="nav-label">User Guide</span>
+                    <span style="margin-left: auto; font-size: 10px; opacity: 0.5;">↗</span>
                 </a>
                 <a href="/hospital/settings"
                     class="nav-item {% if request.path == '/hospital/settings' %}active{% endif %}"
