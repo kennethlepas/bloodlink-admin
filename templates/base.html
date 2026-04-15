@@ -267,6 +267,21 @@
         </div>
     </div>
 
+    <!-- Custom Logout Confirmation Modal -->
+    <div id="logoutModal" class="modal-overlay hidden" style="z-index: 9999;">
+        <div class="modal-content logout-card">
+            <div class="logout-card-header">
+                <div class="logout-icon-box">🚪</div>
+                <h3 class="logout-card-title">Confirm Logout</h3>
+                <p class="logout-card-text">Are you sure you want to log out? Any unsaved changes may be lost.</p>
+            </div>
+            <div class="logout-card-footer">
+                <button class="logout-btn-cancel" id="cancelLogoutBtn">Cancel</button>
+                <button class="logout-btn-confirm" id="confirmLogoutBtn">Log Out</button>
+            </div>
+        </div>
+    </div>
+
     {% block modals %}{% endblock %}
 
     <!-- Firebase Config -->

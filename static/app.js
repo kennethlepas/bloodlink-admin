@@ -25,7 +25,7 @@ let reviews = [];
 
 // DOM Elements
 const elements = {
-    loading: document.getElementById('loading'),
+    loading: document.getElementById('appLoadingScreen'),
     loginContainer: document.getElementById('loginContainer'),
     adminContainer: document.getElementById('adminContainer'),
     loginForm: document.getElementById('loginForm'),

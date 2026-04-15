@@ -842,6 +842,18 @@
             let progress = 0;
             const statusText = document.getElementById('loaderStatus');
 
+            // IMMEDIATE CHECK: Skip loader if logging out
+            const urlParams = new URLSearchParams(window.location.search);
+            const isLoggingOut = urlParams.get('logout') === 'true' || sessionStorage.getItem('logoutInProgress') === 'true';
+
+            if (isLoggingOut) {
+                if (loader) loader.style.display = 'none';
+                if (loginContainer) loginContainer.classList.remove('hidden');
+                document.body.classList.remove('loading-active');
+                sessionStorage.removeItem('logoutInProgress');
+                return; // Halts the loading simulation
+            }
+
             // Advance progress
             const updateLoader = () => {
                 if (progress < 100) {
@@ -889,15 +901,7 @@
 
             // Start simulation after brief delay
             window.addEventListener('load', () => {
-                const urlParams = new URLSearchParams(window.location.search);
-                if (urlParams.get('logout') === 'true') {
-                    // Skip loading screen on logout
-                    loginContainer.classList.remove('hidden');
-                    loader.remove();
-                    document.body.classList.remove('loading-active');
-                } else {
-                    setTimeout(updateLoader, 300);
-                }
+                setTimeout(updateLoader, 300);
             });
         })();
     </script>

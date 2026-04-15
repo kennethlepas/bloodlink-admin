@@ -14,6 +14,7 @@
     let hospitalDonorBookings = [];
     let hospitalRecipientBookings = [];
     let currentBankId = null; // To be synced from RTDB
+    let allPlatformDonors = []; // Track global donors as requested
 
     // Unified Entry Point
     window.initializePage = async function () {
@@ -97,43 +98,97 @@
                 });
         });
 
-        // 3. Load hospital blood requests
-        const requestsPromise = new Promise((resolve) => {
-            firestore.collection('bloodRequests')
-                .where('hospitalEmail', '==', currentHospital.email)
-                .onSnapshot(snapshot => {
-                    hospitalRequests = [];
+        // 3. Load hospital blood requests (Matching requests.js logic for accuracy)
+        const requestsPromise = (async () => {
+            try {
+                const requestsRef = firestore.collection('bloodRequests');
+                const hospital = currentHospital || {};
+                const name = hospital.name || hospital.hospitalName || '';
+                const code = hospital.facilityCode || hospital.code || '';
+                const email = hospital.email || '';
+                const hospitalId = hospital.id || hospital.hospitalId || '';
+
+                const queries = [];
+                if (name) queries.push(requestsRef.where('hospitalName', '==', name).get());
+                if (code) queries.push(requestsRef.where('hospitalCode', '==', code).get());
+                if (hospitalId) queries.push(requestsRef.where('hospitalId', '==', hospitalId).get());
+                if (email) queries.push(requestsRef.where('hospitalEmail', '==', email).get());
+
+                if (queries.length === 0) return;
+
+                // Set up multi-filter snapshot listener or aggregate results
+                // For simplicity and real-time updates, we'll use the most reliable field (email) for the listener
+                // but supplement with a one-time fetch of others or manage multiple listeners.
+                // Given the request, we'll use a combined approach.
+
+                requestsRef.onSnapshot(snapshot => {
+                    const results = new Map();
                     snapshot.forEach(doc => {
-                        hospitalRequests.push({ id: doc.id, ...doc.data() });
+                        const data = doc.data();
+                        const isMatch = (email && data.hospitalEmail === email) ||
+                            (name && data.hospitalName === name) ||
+                            (code && data.hospitalCode === code) ||
+                            (hospitalId && data.hospitalId === hospitalId);
+
+                        if (isMatch) {
+                            results.set(doc.id, { id: doc.id, ...data });
+                        }
                     });
+
+                    hospitalRequests = Array.from(results.values());
                     localStorage.setItem(`req_cache_${currentHospital.email}`, JSON.stringify(hospitalRequests));
                     renderHospitalRequests();
                     updateHospitalStats();
-                    resolve();
-                }, error => {
-                    console.error('Error loading requests:', error);
-                    resolve();
                 });
-        });
+            } catch (error) {
+                console.error('Error loading requests:', error);
+            }
+        })();
 
-        // 4. Load hospital referrals
-        const referralsPromise = new Promise((resolve) => {
-            firestore.collection('referrals')
-                .where('sourceHospital', '==', currentHospital.email)
-                .onSnapshot(snapshot => {
-                    hospitalReferrals = [];
+        // 4. Load hospital referrals (Inbox & Outbox - Matching referrals.js logic)
+        const referralsPromise = (async () => {
+            try {
+                const refRef = firestore.collection('hospital_referrals');
+                const hospital = currentHospital || {};
+                const myIds = [
+                    hospital.id,
+                    hospital.hospitalId,
+                    hospital.name,
+                    hospital.hospitalName,
+                    hospital.facilityCode,
+                    hospital.code,
+                    hospital.email
+                ].filter(Boolean);
+
+                if (myIds.length === 0) return;
+
+                refRef.onSnapshot(snapshot => {
+                    const results = new Map();
                     snapshot.forEach(doc => {
-                        hospitalReferrals.push({ id: doc.id, ...doc.data() });
+                        const data = doc.data();
+                        const isMatch = myIds.includes(data.toHospitalId) ||
+                            myIds.includes(data.fromHospitalId) ||
+                            myIds.includes(data.toHospitalName) ||
+                            myIds.includes(data.fromHospitalName) ||
+                            myIds.includes(data.toHospitalEmail) ||
+                            myIds.includes(data.fromHospitalEmail);
+
+                        if (isMatch) {
+                            results.set(doc.id, { id: doc.id, ...data });
+                        }
                     });
+
+                    hospitalReferrals = Array.from(results.values());
                     localStorage.setItem(`ref_cache_${currentHospital.email}`, JSON.stringify(hospitalReferrals));
                     renderHospitalReferrals();
                     updateHospitalStats();
-                    resolve();
                 }, error => {
                     console.error('Error loading referrals:', error);
-                    resolve();
                 });
-        });
+            } catch (error) {
+                console.error('Referrals setup error:', error);
+            }
+        })();
 
         // 5. Load donor bookings
         const donorBookingsPromise = new Promise((resolve) => {
@@ -157,6 +212,20 @@
                 }, () => resolve());
         });
 
+        // 7. Load all donors (Match Super Admin/Nearby Donors logic)
+        const allDonorsPromise = new Promise((resolve) => {
+            firestore.collection('users')
+                .where('userType', '==', 'donor')
+                .onSnapshot(snapshot => {
+                    allPlatformDonors = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    updateHospitalStats();
+                    resolve();
+                }, error => {
+                    console.error('Error loading platform donors:', error);
+                    resolve();
+                });
+        });
+
         // Use Promise.all to fetch everything at once
         return Promise.all([
             bankDiscoveryPromise,
@@ -164,7 +233,8 @@
             requestsPromise,
             referralsPromise,
             donorBookingsPromise,
-            recipientBookingsPromise
+            recipientBookingsPromise,
+            allDonorsPromise
         ]);
     }
 
@@ -288,16 +358,17 @@
         if (!currentHospital) return;
 
         try {
-            // 1. Local Donors - Count unique donors who booked at this hospital
-            const uniqueDonors = new Set(hospitalDonorBookings.map(b => b.donorId)).size;
+            // 1. Local Donors - Count all donors (as requested to match Super Admin)
+            const totalDonors = allPlatformDonors.length;
             const impactDonorsEl = document.getElementById('impactDonors');
             if (impactDonorsEl) {
-                impactDonorsEl.textContent = uniqueDonors.toLocaleString() + (uniqueDonors > 50 ? '+' : '');
+                impactDonorsEl.textContent = totalDonors.toLocaleString();
             }
 
-            // 2. Lives Saved locally (Completed recipient bookings * 3)
+            // 2. Lives Saved locally (Completed recipient bookings + Completed blood requests * 3)
             const completedRecipients = hospitalRecipientBookings.filter(b => b.status === 'completed' || b.status === 'fulfilled').length;
-            const livesSaved = completedRecipients * 3;
+            const completedRequests = hospitalRequests.filter(r => r.status === 'completed').length;
+            const livesSaved = (completedRecipients + completedRequests) * 3;
             const impactLivesEl = document.getElementById('impactLives');
             if (impactLivesEl) {
                 impactLivesEl.textContent = livesSaved.toLocaleString();

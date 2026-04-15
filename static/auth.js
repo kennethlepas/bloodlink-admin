@@ -53,7 +53,7 @@
 
         // DOM Elements
         const elements = {
-            loading: document.getElementById('loading'),
+            loading: document.getElementById('appLoadingScreen'),
             loginContainer: document.getElementById('loginContainer'),
             adminDashboard: document.getElementById('adminDashboard'),
             loginForm: document.getElementById('loginForm'),
@@ -308,7 +308,16 @@
                         }
                     }
                 } else {
-                    window.location.href = '/';
+                    // Optimized logout redirect
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.get('logout') === 'true' || sessionStorage.getItem('logoutInProgress') === 'true') {
+                        // Already handled or handling logout
+                        if (window.location.pathname !== '/') {
+                            window.location.href = '/?logout=true';
+                        }
+                    } else {
+                        window.location.href = '/';
+                    }
                 }
             }
         });
@@ -672,9 +681,19 @@
         });
 
         // Logout Handler
-        const logoutActions = async () => {
-            if (!confirm('Are you sure you want to logout?')) return;
+        const logoutActions = () => {
+            const logoutModal = document.getElementById('logoutModal');
+            if (logoutModal) {
+                logoutModal.classList.remove('hidden');
+            } else {
+                // Fallback to confirm if modal element is missing for some reason
+                if (confirm('Are you sure you want to logout?')) {
+                    performLogout();
+                }
+            }
+        };
 
+        const performLogout = async () => {
             if (window.auditLogs) {
                 await window.auditLogs.actions.logout();
             }
@@ -682,9 +701,37 @@
             localStorage.clear();
             sessionStorage.clear();
 
+            // Set logout flag AFTER clearing sessionStorage
+            sessionStorage.setItem('logoutInProgress', 'true');
+
             await auth.signOut();
             window.location.href = '/?logout=true';
         };
+
+        // Wire up Modal Buttons
+        const cancelLogoutBtn = document.getElementById('cancelLogoutBtn');
+        const confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
+        const logoutModal = document.getElementById('logoutModal');
+
+        if (cancelLogoutBtn && logoutModal) {
+            cancelLogoutBtn.addEventListener('click', () => {
+                logoutModal.classList.add('hidden');
+            });
+        }
+
+        if (confirmLogoutBtn) {
+            confirmLogoutBtn.addEventListener('click', () => {
+                confirmLogoutBtn.disabled = true;
+                confirmLogoutBtn.textContent = 'Logging out...';
+                performLogout();
+            });
+        }
+
+        if (logoutModal) {
+            logoutModal.addEventListener('click', (e) => {
+                if (e.target === logoutModal) logoutModal.classList.add('hidden');
+            });
+        }
 
         if (elements.logoutBtn) {
             elements.logoutBtn.addEventListener('click', logoutActions);
