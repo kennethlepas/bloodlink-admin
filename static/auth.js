@@ -265,19 +265,21 @@
                             }
                         }
 
-                        // Hide loading screen
-                        setTimeout(() => {
-                            if (elements.loading) {
-                                elements.loading.style.opacity = '0';
-                                setTimeout(() => {
-                                    elements.loading.classList.add('hidden');
-                                    elements.loading.style.opacity = '1';
-                                }, 500);
-                            }
-                        }, 600);
+                        // Hide loading screen (Skip on login page to allow simulation to finish)
+                        if (!isLoginPage) {
+                            setTimeout(() => {
+                                if (elements.loading) {
+                                    elements.loading.style.opacity = '0';
+                                    setTimeout(() => {
+                                        elements.loading.classList.add('hidden');
+                                        elements.loading.style.opacity = '1';
+                                    }, 500);
+                                }
+                            }, 600);
+                        }
                     } else {
                         console.log('Access denied: Unauthorized role');
-                        if (elements.loading) elements.loading.classList.add('hidden');
+                        if (elements.loading && !isLoginPage) elements.loading.classList.add('hidden');
                         if (elements.loginError && isLoginPage) {
                             elements.loginError.textContent = 'Access denied: Unauthorized account';
                             elements.loginError.classList.remove('hidden');
@@ -286,12 +288,12 @@
                     }
                 } catch (error) {
                     console.error('Auth check error:', error);
-                    if (elements.loading) elements.loading.classList.add('hidden');
+                    if (elements.loading && !isLoginPage) elements.loading.classList.add('hidden');
                     await auth.signOut();
                 }
             } else {
                 currentUser = null;
-                if (elements.loading) elements.loading.classList.add('hidden');
+                if (elements.loading && !isLoginPage) elements.loading.classList.add('hidden');
                 if (isLoginPage) {
                     if (elements.loginContainer) elements.loginContainer.classList.remove('hidden');
 

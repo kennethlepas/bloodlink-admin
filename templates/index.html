@@ -857,12 +857,17 @@
             // Advance progress
             const updateLoader = () => {
                 if (progress < 100) {
-                    let jump = (progress < 25) ? Math.floor(Math.random() * 2) + 1 : Math.floor(Math.random() * 4) + 2;
+                    // Small random jumps that average out to ~1.3% every 80ms
+                    // Average jump: (0.8 + 1.8) / 2 = 1.3
+                    // Total steps: 100 / 1.3 = ~77 steps
+                    // Target time: 6000ms. 6000 / 77 = ~78ms per step.
+                    let jump = Math.random() * 1.0 + 0.8;
                     progress = Math.min(100, progress + jump);
                     if (fill) fill.style.width = progress + '%';
 
-                    // Update status messages
-                    if (progress > (currentMessageIndex + 1) * 14 && currentMessageIndex < messages.length - 1) {
+                    // Update status messages based on progress
+                    const messageThreshold = (currentMessageIndex + 1) * (100 / messages.length);
+                    if (progress > messageThreshold && currentMessageIndex < messages.length - 1) {
                         currentMessageIndex++;
                         if (statusText) {
                             statusText.style.opacity = 0;
@@ -873,8 +878,7 @@
                         }
                     }
 
-                    const nextDelay = (progress < 25) ? 500 : (Math.floor(Math.random() * 200) + 150);
-                    setTimeout(updateLoader, nextDelay);
+                    setTimeout(updateLoader, 80);
                 } else {
                     finishLoading();
                 }
@@ -895,13 +899,13 @@
                     // Optional: Remove from DOM after transition
                     setTimeout(() => {
                         loader.remove();
-                    }, 600);
-                }, 400);
+                    }, 800);
+                }, 1000);
             };
 
-            // Start simulation after brief delay
+            // Start simulation after brief delay to allow immersion
             window.addEventListener('load', () => {
-                setTimeout(updateLoader, 300);
+                setTimeout(updateLoader, 1000);
             });
         })();
     </script>
