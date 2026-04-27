@@ -82,7 +82,8 @@
             resetEmail: document.getElementById('resetEmail'),
             btnSendResetLink: document.getElementById('btnSendResetLink'),
             resetPasswordBtn: document.getElementById('resetPasswordBtn'),
-            hospitalNameDisplay: document.getElementById('hospitalNameDisplay')
+            hospitalNameDisplay: document.getElementById('hospitalNameDisplay'),
+            headerLogoutBtn: document.getElementById('headerLogoutBtn')
         };
 
         // Check if we're on login page or dashboard page
@@ -172,153 +173,128 @@
                         window.userRole = role;
                         sessionStorage.setItem('userRole', role);
 
+                        console.log('✅ Auth mapping complete:', { role, path: window.location.pathname });
+
+                        // Centralized Loader Hiding & Shaking Prevention
+                        const hideLoader = () => {
+                            const loadingScreen = document.getElementById('appLoadingScreen') || document.getElementById('global-loader');
+                            if (loadingScreen && !loadingScreen.classList.contains('hidden')) {
+                                console.log('✨ Hiding loading screen and stabilizing UI');
+                                loadingScreen.style.opacity = '0';
+                                setTimeout(() => {
+                                    loadingScreen.classList.add('hidden');
+                                    loadingScreen.style.display = 'none';
+                                    document.body.classList.remove('loading-active');
+                                }, 500);
+                            } else {
+                                document.body.classList.remove('loading-active');
+                            }
+                        };
+
+                        // 1. Handle Redirects (Prevention of loops)
                         if (isLoginPage) {
                             const redirectUrl = role === 'hospital_admin' ? '/hospital/dashboard' : '/dashboard';
-                            window.location.href = redirectUrl;
+                            if (window.location.pathname !== redirectUrl) {
+                                console.log('🚀 Redirecting to portal:', redirectUrl);
+                                window.location.href = redirectUrl;
+                                return;
+                            }
+                        } else if (role === 'hospital_admin' && !window.location.pathname.startsWith('/hospital')) {
+                            console.log('⚠️ Re-routing Hospital Admin to correct portal');
+                            window.location.href = "/hospital/dashboard";
                             return;
                         }
 
-                        // Route Protection: Prevent cross-portal access & redundant redirects
-                        const path = window.location.pathname;
-                        if (role === 'hospital_admin') {
-                            // If ALREADY in hospital portal, do NOT redirect (prevents unprofessional flashes)
-                            if (path.startsWith('/hospital')) {
-                                console.log('🛡️ Portal access stable: No redirect needed');
-                            } else {
-                                const superAdminRoutes = ['/dashboard', '/users', '/requests', '/referrals', '/chat', '/reports', '/notifications', '/system-logs', '/verifications', '/settings'];
-                                if (superAdminRoutes.includes(path) || path === '/') {
-                                    if (path === "/chat") { window.location.href = "/hospital/chat"; return; }
-                                    if (path === "/referrals") { window.location.href = "/hospital/referrals"; return; }
-                                    window.location.href = "/hospital/dashboard";
-                                    return;
-                                }
-                            }
-                        } else if (role === 'super_admin') {
-                            // Super Admins can access all routes for monitoring
-                            if (path === '/') {
-                                window.location.href = '/dashboard';
-                                return;
-                            }
+                        // 2. Handle Unauthorized Role
+                        if (!role) {
+                            console.log('Access denied: Unauthorized role');
+                            hideLoader();
+                            await auth.signOut();
+                            return;
                         }
 
-                        // --- UI Initialization (runs for BOTH valid roles) ---
-
-                        // Update UI with user info
+                        // 3. UI Context Updates
                         if (elements.userEmail) elements.userEmail.textContent = user.email;
                         if (elements.userName) {
                             const displayName = userData.hospitalName || userData.name || user.email.split('@')[0];
                             elements.userName.textContent = displayName;
-                            if (elements.userAvatar) {
-                                elements.userAvatar.textContent = displayName.charAt(0).toUpperCase();
-                                // Change WC if WC is hardcoded
-                                if (elements.userAvatar.textContent === 'H' && displayName !== 'Hospital Name') {
-                                    elements.userAvatar.textContent = displayName.charAt(0).toUpperCase();
-                                }
-                            }
-                            if (elements.hospitalNameDisplay) {
-                                if (role === 'hospital_admin') {
-                                    elements.hospitalNameDisplay.textContent = userData.hospitalName || userData.name || 'Hospital Admin';
-                                } else if (role === 'super_admin') {
-                                    elements.hospitalNameDisplay.textContent = window.hospitalData ? (window.hospitalData.hospitalName || window.hospitalData.name) : 'Super Admin (Platform)';
-                                }
-                            }
-
-                            // Specific hospital sidebar update
-                            if (role === 'hospital_admin') {
-                                const codeDisplay = document.getElementById('hospitalCodeDisplay');
-                                if (codeDisplay) {
-                                    codeDisplay.innerHTML = `Code: <span style="color: var(--primary); font-weight: 700;">${userData.facilityCode || userData.code || '----'}</span>`;
-                                }
-                                const userNameEl = document.getElementById('userName');
-                                if (userNameEl) userNameEl.textContent = userData.hospitalName || userData.name;
-
-                                const hospitalNameDisplay = document.getElementById('hospitalNameDisplay');
-                                if (hospitalNameDisplay) hospitalNameDisplay.textContent = userData.hospitalName || userData.name || 'Hospital Admin';
-
-                                const userEmailEl = document.getElementById('userEmail');
-                                if (userEmailEl) userEmailEl.textContent = userData.email;
-                            }
+                        }
+                        if (elements.userAvatar) {
+                            const displayName = userData.hospitalName || userData.name || user.email.split('@')[0];
+                            elements.userAvatar.textContent = displayName.charAt(0).toUpperCase();
                         }
 
-                        // Apply role-based visibility to sidebar
-                        applyRoleVisibility(role);
+                        // Specific hospital branding reinforcement
+                        if (role === 'hospital_admin' && elements.hospitalNameDisplay) {
+                            elements.hospitalNameDisplay.textContent = userData.hospitalName || userData.name || 'Hospital Admin';
+                        }
 
-                        // Show admin dashboard
+                        // Apply sidebar visibility and dashboard access
+                        applyRoleVisibility(role);
                         if (elements.adminDashboard) elements.adminDashboard.classList.remove('hidden');
 
-                        // Set hospital data globally and update sidebar branding
+                        // Set global context
                         if (role === 'hospital_admin') {
                             window.hospitalData = userData;
                             localStorage.setItem('hospitalData', JSON.stringify(userData));
-                            if (window.updateHospitalSidebar) {
-                                window.updateHospitalSidebar(userData);
-                            }
                         }
 
-                        // Initialize page-specific functionality
+                        // 4. Initialize page-specific functionality
                         if (window.initializePage) {
                             console.log('🔄 Calling module initialization...');
                             try {
                                 await window.initializePage();
-                            } catch (initError) {
-                                console.error('Page initialization failed:', initError);
+                            } catch (err) {
+                                console.error('Page Init Error:', err);
                             }
                         }
 
-                        // Hide loading screen (Skip on login page to allow simulation to finish)
-                        if (!isLoginPage) {
-                            setTimeout(() => {
-                                if (elements.loading) {
-                                    elements.loading.style.opacity = '0';
-                                    setTimeout(() => {
-                                        elements.loading.classList.add('hidden');
-                                        elements.loading.style.opacity = '1';
-                                    }, 500);
-                                }
-                            }, 600);
-                        }
-                    } else {
-                        console.log('Access denied: Unauthorized role');
-                        if (elements.loading && !isLoginPage) elements.loading.classList.add('hidden');
-                        if (elements.loginError && isLoginPage) {
-                            elements.loginError.textContent = 'Access denied: Unauthorized account';
-                            elements.loginError.classList.remove('hidden');
-                        }
-                        await auth.signOut();
+                        // 5. Final Step: Show UI / Hide Loader
+                        hideLoader();
                     }
                 } catch (error) {
                     console.error('Auth check error:', error);
-                    if (elements.loading && !isLoginPage) elements.loading.classList.add('hidden');
+                    document.body.classList.remove('loading-active');
                     await auth.signOut();
                 }
             } else {
                 currentUser = null;
-                if (elements.loading && !isLoginPage) elements.loading.classList.add('hidden');
-                if (isLoginPage) {
-                    if (elements.loginContainer) elements.loginContainer.classList.remove('hidden');
+                const urlParams = new URLSearchParams(window.location.search);
+                const isLoggingOut = urlParams.get('logout') === 'true' || sessionStorage.getItem('logoutInProgress') === 'true';
 
-                    // Check for Magic Link Token in URL
-                    const urlParams = new URLSearchParams(window.location.search);
+                if (isLoggingOut) {
+                    if (window.location.pathname !== '/') {
+                        window.location.href = '/?logout=true';
+                        return;
+                    }
+                    // Already on login page, clear states and ensure loader is hidden
+                    sessionStorage.removeItem('logoutInProgress');
+                    document.body.classList.remove('loading-active');
+                    const loader = document.getElementById('appLoadingScreen') || document.getElementById('global-loader');
+                    if (loader) loader.style.display = 'none';
+                } else if (!isLoginPage) {
+                    window.location.href = '/';
+                    return;
+                } else {
+                    // Logic for login page (auto-hiding loader if it's stuck)
+                    setTimeout(() => {
+                        document.body.classList.remove('loading-active');
+                        const loader = document.getElementById('appLoadingScreen') || document.getElementById('global-loader');
+                        if (loader && !loader.classList.contains('hidden')) {
+                            loader.style.opacity = '0';
+                            loader.classList.add('hidden');
+                        }
+                    }, 5000);
+
+                    // Check for Magic Link Token
                     const token = urlParams.get('token');
                     if (token) {
                         handleMagicLinkActivation(token);
                     } else if (window.location.pathname === '/claim') {
-                        // Automatically open claim modal if on /claim route
                         if (elements.claimModal) {
                             elements.claimModal.classList.add('show');
                             showClaimStep(1);
                         }
-                    }
-                } else {
-                    // Optimized logout redirect
-                    const urlParams = new URLSearchParams(window.location.search);
-                    if (urlParams.get('logout') === 'true' || sessionStorage.getItem('logoutInProgress') === 'true') {
-                        // Already handled or handling logout
-                        if (window.location.pathname !== '/') {
-                            window.location.href = '/?logout=true';
-                        }
-                    } else {
-                        window.location.href = '/';
                     }
                 }
             }
@@ -347,6 +323,7 @@
         if (elements.closeClaimModal) elements.closeClaimModal.onclick = () => elements.claimModal.classList.remove('show');
 
         // --- Forgot Password Logic ---
+
         if (elements.forgotPasswordLink) {
             elements.forgotPasswordLink.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -682,78 +659,76 @@
             document.addEventListener(type, resetIdleTimer, true);
         });
 
-        // Logout Handler
-        const logoutActions = () => {
-            const logoutModal = document.getElementById('logoutModal');
+        const performLogout = async () => {
+            console.log('🚪 Logout sequence initiated...');
+            try {
+                // Trigger audit log but don't let it block the entire logout process if it hangs
+                if (window.auditLogs && window.auditLogs.actions && window.auditLogs.actions.logout) {
+                    // Fire-and-forget for better UI responsiveness
+                    window.auditLogs.actions.logout().catch(err => console.error('Logout audit failed:', err));
+                }
+            } catch (e) {
+                console.error('Audit log error during logout:', e);
+            }
+
+            // Progressive cleanup to ensure user is logged out even if sign-out hangs
+            localStorage.clear();
+            sessionStorage.clear();
+            sessionStorage.setItem('logoutInProgress', 'true');
+
+            try {
+                // Firebase sign out
+                await auth.signOut();
+                console.log('✅ Firebase sign-out successful');
+            } catch (signOutError) {
+                console.error('Firebase sign out error:', signOutError);
+            }
+
+            // Final redirect using absolute path to prevent relative URL issues
+            console.log('🚀 Redirecting to login...');
+            window.location.replace('/?logout=true');
+        };
+
+        // Logout Confirmation Logic
+        const logoutModal = document.getElementById('logoutModal');
+        const confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
+        const cancelLogoutBtn = document.getElementById('cancelLogoutBtn');
+
+        const logoutActions = (e) => {
+            if (e) e.preventDefault();
             if (logoutModal) {
                 logoutModal.classList.remove('hidden');
+                logoutModal.classList.add('show');
             } else {
-                // Fallback to confirm if modal element is missing for some reason
-                if (confirm('Are you sure you want to logout?')) {
+                if (confirm('Are you sure you want to log out?')) {
                     performLogout();
                 }
             }
         };
 
-        const performLogout = async () => {
-            console.log('🚪 Logout sequence initiated...');
-
-            try {
-                // Trigger audit log but don't let it block the entire logout process if it hangs or fails
-                if (window.auditLogs && window.auditLogs.actions && window.auditLogs.actions.logout) {
-                    console.log('📝 Recording logout audit event...');
-                    // Fire and forget (with error catching) to ensure responsiveness
-                    window.auditLogs.actions.logout().catch(err => {
-                        console.error('Audit log failed during logout:', err);
-                    });
-                }
-            } catch (e) {
-                console.error('Logout audit error:', e);
-            }
-
-            // Progressive cleanup to ensure user is logged out even if sign-out or logging hangs
-            console.log('🧹 Clearing local session data...');
-            localStorage.clear();
-            sessionStorage.clear();
-
-            // Set logout flag for the landing page
-            sessionStorage.setItem('logoutInProgress', 'true');
-
-            try {
-                // Firebase sign out (still awaited but wrapped in try/catch)
-                console.log('🔐 Signing out from Firebase...');
-                await auth.signOut();
-            } catch (signOutError) {
-                console.error('Firebase sign out error:', signOutError);
-            }
-
-            // Final redirect regardless of what happened above
-            console.log('🚀 Redirecting to login...');
-            window.location.href = '/?logout=true';
-        };
-
-        // Wire up Modal Buttons
-        const cancelLogoutBtn = document.getElementById('cancelLogoutBtn');
-        const confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
-        const logoutModal = document.getElementById('logoutModal');
-
-        if (cancelLogoutBtn && logoutModal) {
-            cancelLogoutBtn.addEventListener('click', () => {
-                logoutModal.classList.add('hidden');
-            });
-        }
-
         if (confirmLogoutBtn) {
             confirmLogoutBtn.addEventListener('click', () => {
                 confirmLogoutBtn.disabled = true;
-                confirmLogoutBtn.textContent = 'Logging out...';
+                confirmLogoutBtn.innerHTML = '<span class="loading-spinner"></span> Logging out...';
                 performLogout();
+            });
+        }
+
+        if (cancelLogoutBtn) {
+            cancelLogoutBtn.addEventListener('click', () => {
+                if (logoutModal) {
+                    logoutModal.classList.remove('show');
+                    logoutModal.classList.add('hidden');
+                }
             });
         }
 
         if (logoutModal) {
             logoutModal.addEventListener('click', (e) => {
-                if (e.target === logoutModal) logoutModal.classList.add('hidden');
+                if (e.target === logoutModal) {
+                    logoutModal.classList.remove('show');
+                    logoutModal.classList.add('hidden');
+                }
             });
         }
 
@@ -761,9 +736,8 @@
             elements.logoutBtn.addEventListener('click', logoutActions);
         }
 
-        const headerLogoutBtn = document.getElementById('headerLogoutBtn');
-        if (headerLogoutBtn) {
-            headerLogoutBtn.addEventListener('click', logoutActions);
+        if (elements.headerLogoutBtn) {
+            elements.headerLogoutBtn.addEventListener('click', logoutActions);
         }
 
         // Reset Password Handler (for logged-in sessions)

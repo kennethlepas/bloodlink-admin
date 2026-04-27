@@ -55,24 +55,19 @@
             const loader = document.getElementById('global-loader');
             if (!loader) return;
 
-            // Wait for auth to be determined
-            auth.onAuthStateChanged((user) => {
-                const progressFill = loader.querySelector('.loading-progress-fill');
-                const statusText = loader.querySelector('.loading-status');
-
-                if (progressFill) progressFill.style.width = '100%';
-                if (statusText) statusText.textContent = 'Welcome, ' + (user?.displayName || 'Admin');
-
-                setTimeout(() => {
-                    loader.classList.add('hidden');
-                    document.body.classList.remove('loading-active');
-
-                    // Transition to hidden and remove from DOM after fade
+            console.log('🔄 [page-transitions] Loader management delegated to auth.js');
+            // Simplified: Rely on auth.js to hide loader. 
+            // We just ensure it's hidden after a safety timeout if auth.js hangs.
+            setTimeout(() => {
+                if (loader && !loader.classList.contains('hidden')) {
+                    console.log('⏳ [page-transitions] Safety timeout hiding loader');
+                    loader.style.opacity = '0';
                     setTimeout(() => {
-                        loader.style.display = 'none';
+                        loader.classList.add('hidden');
+                        document.body.classList.remove('loading-active');
                     }, 500);
-                }, 800);
-            });
+                }
+            }, 10000); // 10s safety timeout
         },
 
         /**

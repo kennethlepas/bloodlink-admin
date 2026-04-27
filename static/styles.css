@@ -75,6 +75,11 @@ body {
     min-height: 100vh;
 }
 
+body.loading-active {
+    overflow: hidden !important;
+    height: 100vh !important;
+}
+
 .hidden {
     display: none !important;
 }

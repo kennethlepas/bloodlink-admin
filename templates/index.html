@@ -885,21 +885,22 @@
             };
 
             const finishLoading = () => {
+                if (!loader || !statusText || !fill) return;
+
                 statusText.textContent = "Welcome to BloodLink";
                 fill.style.width = '100%';
 
+                console.log('🏁 [login-loader] Simulation finished');
+
                 setTimeout(() => {
-                    // Show login container first but keep it invisible
-                    loginContainer.classList.remove('hidden');
+                    if (loginContainer) loginContainer.classList.remove('hidden');
 
                     // Fade out loader
-                    loader.classList.add('fade-out');
-                    document.body.classList.remove('loading-active');
-
-                    // Optional: Remove from DOM after transition
+                    loader.style.opacity = '0';
                     setTimeout(() => {
-                        loader.remove();
-                    }, 800);
+                        loader.classList.add('hidden');
+                        document.body.classList.remove('loading-active');
+                    }, 500);
                 }, 1000);
             };
 
