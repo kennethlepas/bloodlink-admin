@@ -696,17 +696,39 @@
         };
 
         const performLogout = async () => {
-            if (window.auditLogs) {
-                await window.auditLogs.actions.logout();
+            console.log('🚪 Logout sequence initiated...');
+
+            try {
+                // Trigger audit log but don't let it block the entire logout process if it hangs or fails
+                if (window.auditLogs && window.auditLogs.actions && window.auditLogs.actions.logout) {
+                    console.log('📝 Recording logout audit event...');
+                    // Fire and forget (with error catching) to ensure responsiveness
+                    window.auditLogs.actions.logout().catch(err => {
+                        console.error('Audit log failed during logout:', err);
+                    });
+                }
+            } catch (e) {
+                console.error('Logout audit error:', e);
             }
-            // Clear all cached data to prevent cross-account leaks
+
+            // Progressive cleanup to ensure user is logged out even if sign-out or logging hangs
+            console.log('🧹 Clearing local session data...');
             localStorage.clear();
             sessionStorage.clear();
 
-            // Set logout flag AFTER clearing sessionStorage
+            // Set logout flag for the landing page
             sessionStorage.setItem('logoutInProgress', 'true');
 
-            await auth.signOut();
+            try {
+                // Firebase sign out (still awaited but wrapped in try/catch)
+                console.log('🔐 Signing out from Firebase...');
+                await auth.signOut();
+            } catch (signOutError) {
+                console.error('Firebase sign out error:', signOutError);
+            }
+
+            // Final redirect regardless of what happened above
+            console.log('🚀 Redirecting to login...');
             window.location.href = '/?logout=true';
         };
 
