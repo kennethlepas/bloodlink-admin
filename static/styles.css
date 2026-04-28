@@ -80,6 +80,14 @@ body.loading-active {
     height: 100vh !important;
 }
 
+/* On mobile, allow scroll so keyboard doesn't hide inputs */
+@media (max-width: 768px) {
+    body.loading-active {
+        overflow: auto !important;
+        height: auto !important;
+    }
+}
+
 .hidden {
     display: none !important;
 }
@@ -380,11 +388,8 @@ body.loading-active {
 
 /* ==================== LOGIN PAGE ==================== */
 .welcome-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -392,6 +397,8 @@ body.loading-active {
     background-size: cover;
     background-position: center;
     padding: 24px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .welcome-overlay {
@@ -513,7 +520,8 @@ body.loading-active {
     padding: 12px 16px;
     border: 2px solid var(--gray-200);
     border-radius: var(--border-radius-sm);
-    font-size: 15px;
+    font-size: 16px;
+    /* >= 16px prevents iOS Safari auto-zoom on focus */
     transition: var(--transition);
     background: var(--bg-primary);
 }

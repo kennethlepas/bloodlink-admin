@@ -255,7 +255,36 @@
                 } catch (error) {
                     console.error('Auth check error:', error);
                     document.body.classList.remove('loading-active');
-                    await auth.signOut();
+
+                    // Only sign out for non-network errors
+                    // Network errors on mobile (slow 3G/4G) should NOT force logout
+                    const isNetworkError = error.code === 'unavailable'
+                        || error.code === 'resource-exhausted'
+                        || (error.message && (
+                            error.message.includes('network')
+                            || error.message.includes('offline')
+                            || error.message.includes('client is offline')
+                            || error.message.includes('Failed to get document')
+                            || error.message.includes('DEADLINE_EXCEEDED')
+                        ));
+
+                    if (isNetworkError) {
+                        console.warn('⚠️ Network error during auth check — staying signed in');
+                        window.utils.showNotification('Connection is slow. Please wait or check your internet.', 'warning');
+
+                        // Still try to show the dashboard if we're on a dashboard page
+                        const loadingScreen = document.getElementById('appLoadingScreen') || document.getElementById('global-loader');
+                        if (loadingScreen) {
+                            loadingScreen.style.opacity = '0';
+                            setTimeout(() => {
+                                loadingScreen.classList.add('hidden');
+                                loadingScreen.style.display = 'none';
+                            }, 500);
+                        }
+                        if (elements.adminDashboard) elements.adminDashboard.classList.remove('hidden');
+                    } else {
+                        await auth.signOut();
+                    }
                 }
             } else {
                 currentUser = null;
@@ -277,6 +306,7 @@
                     return;
                 } else {
                     // Logic for login page (auto-hiding loader if it's stuck)
+                    // Increased to 10s for slow mobile connections
                     setTimeout(() => {
                         document.body.classList.remove('loading-active');
                         const loader = document.getElementById('appLoadingScreen') || document.getElementById('global-loader');
@@ -284,7 +314,10 @@
                             loader.style.opacity = '0';
                             loader.classList.add('hidden');
                         }
-                    }, 5000);
+                        // Also ensure login form is visible (fixes blank page)
+                        const loginCont = document.getElementById('loginContainer');
+                        if (loginCont) loginCont.classList.remove('hidden');
+                    }, 10000);
 
                     // Check for Magic Link Token
                     const token = urlParams.get('token');
