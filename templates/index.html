@@ -44,7 +44,6 @@
             z-index: 2;
             width: 100%;
             max-width: 440px;
-            margin-top: -60px;
             animation: slideUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
@@ -284,26 +283,33 @@
         /* ── Responsive tweaks ── */
         @media (max-width: 480px) {
             .login-card {
-                padding: 20px 16px 18px;
+                padding: 24px 18px 22px;
                 border-radius: 14px;
-                max-height: none;
-                /* let it grow naturally on mobile */
+                max-height: 85dvh;
+                max-height: 85vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
             }
 
             .welcome-container {
-                align-items: flex-start;
-                /* push card to top so keyboard doesn't cover it */
+                align-items: center;
+                justify-content: center;
                 padding: 16px 12px;
+                /* safe-area for notched phones */
+                padding-top: max(16px, env(safe-area-inset-top));
+                padding-bottom: max(16px, env(safe-area-inset-bottom));
             }
 
             .welcome-content {
                 max-width: 100%;
-                margin-top: 20px;
+                margin: auto 0;
             }
 
             .logo-image-large {
-                width: 64px;
-                height: 64px;
+                width: 72px;
+                height: 72px;
+                border-radius: 18px;
+                margin-bottom: 14px;
             }
 
             .login-header {
@@ -311,7 +317,7 @@
             }
 
             .login-header h1 {
-                font-size: 18px;
+                font-size: 19px;
             }
 
             .login-header p {
@@ -319,8 +325,39 @@
             }
 
             .login-footer {
-                margin-top: 12px;
-                padding-top: 10px;
+                margin-top: 14px;
+                padding-top: 12px;
+            }
+
+            .welcome-brand {
+                position: relative;
+                bottom: auto;
+                left: auto;
+                transform: none;
+                margin-top: 16px;
+                justify-content: center;
+            }
+        }
+
+        /* Landscape / very short screens */
+        @media (max-height: 500px) {
+            .welcome-container {
+                align-items: flex-start;
+                padding-top: 8px;
+            }
+
+            .login-card {
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+
+            .logo-image-large {
+                width: 48px;
+                height: 48px;
+            }
+
+            .login-header {
+                margin-bottom: 10px;
             }
         }
 
@@ -955,6 +992,19 @@
             window.addEventListener('load', () => {
                 setTimeout(updateLoader, 1000);
             });
+        })();
+
+        // Mobile keyboard handler: scroll focused input into view
+        (function () {
+            if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+                document.addEventListener('focusin', function (e) {
+                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                        setTimeout(() => {
+                            e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 300);
+                    }
+                });
+            }
         })();
     </script>
 </body>

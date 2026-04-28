@@ -110,6 +110,9 @@
         window.addEventListener('offline', updateNetworkUI);
         updateNetworkUI();
 
+        // Flag to protect freshly-logged-in users from transient errors
+        let loginInProgress = false;
+
         // Authentication State Observer
         console.log('🛡️ Auth observer starting...');
         auth.onAuthStateChanged(async user => {
@@ -127,24 +130,43 @@
 
                     // --- 0. Global Suspension Check ---
                     // Check if account is active in the universal 'users' collection
-                    const userGlobalSnap = await firestore.collection('users').doc(emailKey).get();
-                    if (userGlobalSnap.exists && userGlobalSnap.data().isActive === false) {
+                    // Use default source so offline cache is leveraged on poor connections
+                    let userGlobalSnap;
+                    try {
+                        userGlobalSnap = await firestore.collection('users').doc(emailKey).get();
+                    } catch (fetchErr) {
+                        console.warn('⚠️ Could not fetch global user doc, continuing with auth:', fetchErr.message);
+                        userGlobalSnap = null;
+                    }
+                    if (userGlobalSnap && userGlobalSnap.exists && userGlobalSnap.data().isActive === false) {
                         window.utils.showNotification('Your account has been deactivated. Please contact the administrator.', 'error');
                         await auth.signOut();
                         return;
                     }
 
                     // 1. Check Super Admins
-                    const adminSnapshot = await database.ref(`admins/${emailKey}`).once('value');
-                    if (adminSnapshot.exists() && adminSnapshot.val() === true) {
+                    let adminSnapshot;
+                    try {
+                        adminSnapshot = await database.ref(`admins/${emailKey}`).once('value');
+                    } catch (fetchErr) {
+                        console.warn('⚠️ Could not fetch admin ref, continuing:', fetchErr.message);
+                        adminSnapshot = null;
+                    }
+                    if (adminSnapshot && adminSnapshot.exists() && adminSnapshot.val() === true) {
                         role = 'super_admin';
                         userData = { email: user.email, name: 'Super Admin' };
                     }
 
                     // 2. Check Hospital Admins (Only if not already Super Admin)
                     if (!role) {
-                        const hospitalSnapshot = await firestore.collection('hospitals').doc(emailKey).get();
-                        if (hospitalSnapshot.exists) {
+                        let hospitalSnapshot;
+                        try {
+                            hospitalSnapshot = await firestore.collection('hospitals').doc(emailKey).get();
+                        } catch (fetchErr) {
+                            console.warn('⚠️ Could not fetch hospital doc:', fetchErr.message);
+                            hospitalSnapshot = null;
+                        }
+                        if (hospitalSnapshot && hospitalSnapshot.exists) {
                             const hData = hospitalSnapshot.data();
                             if (hData.locked) {
                                 window.utils.showNotification('This account is locked. Please contact the Super Admin.', 'error');
@@ -167,6 +189,23 @@
                         localStorage.removeItem('hospitalData');
                         console.log('👑 Pure Super Admin context maintained');
                     }
+
+                    // 3. Cached fallback: If Firestore failed but we have cached role data, use it
+                    if (!role) {
+                        const cachedRole2 = sessionStorage.getItem('userRole');
+                        const cachedHospital2 = JSON.parse(localStorage.getItem('hospitalData'));
+                        if (cachedRole2 && (loginInProgress || cachedHospital2)) {
+                            console.log('🔄 Using cached role data as Firestore fallback:', cachedRole2);
+                            role = cachedRole2;
+                            if (cachedRole2 === 'hospital_admin' && cachedHospital2) {
+                                userData = { ...userData, ...cachedHospital2 };
+                                window.hospitalData = cachedHospital2;
+                            }
+                        }
+                    }
+
+                    // Clear the login-in-progress flag
+                    loginInProgress = false;
 
                     if (role) {
                         currentUser = { ...user, role, ...userData };
@@ -260,17 +299,26 @@
                     // Network errors on mobile (slow 3G/4G) should NOT force logout
                     const isNetworkError = error.code === 'unavailable'
                         || error.code === 'resource-exhausted'
+                        || error.code === 'auth/network-request-failed'
+                        || error.code === 'deadline-exceeded'
+                        || error.name === 'TypeError'
                         || (error.message && (
                             error.message.includes('network')
                             || error.message.includes('offline')
                             || error.message.includes('client is offline')
                             || error.message.includes('Failed to get document')
                             || error.message.includes('DEADLINE_EXCEEDED')
+                            || error.message.includes('Failed to fetch')
+                            || error.message.includes('Load failed')
+                            || error.message.includes('NetworkError')
+                            || error.message.includes('timeout')
+                            || error.message.includes('ERR_INTERNET_DISCONNECTED')
                         ));
 
-                    if (isNetworkError) {
-                        console.warn('⚠️ Network error during auth check — staying signed in');
-                        window.utils.showNotification('Connection is slow. Please wait or check your internet.', 'warning');
+                    if (isNetworkError || loginInProgress) {
+                        console.warn('⚠️ Network/transient error during auth check — staying signed in');
+                        loginInProgress = false;
+                        if (window.utils) window.utils.showNotification('Connection is slow. Please wait or check your internet.', 'warning');
 
                         // Still try to show the dashboard if we're on a dashboard page
                         const loadingScreen = document.getElementById('appLoadingScreen') || document.getElementById('global-loader');
@@ -282,7 +330,20 @@
                             }, 500);
                         }
                         if (elements.adminDashboard) elements.adminDashboard.classList.remove('hidden');
+
+                        // If we have cached role, try to use it to show dashboard
+                        const fallbackRole = sessionStorage.getItem('userRole');
+                        if (fallbackRole && !isLoginPage) {
+                            applyRoleVisibility(fallbackRole);
+                            if (fallbackRole === 'hospital_admin') {
+                                const fallbackData = JSON.parse(localStorage.getItem('hospitalData'));
+                                if (fallbackData && window.updateHospitalSidebar) {
+                                    window.updateHospitalSidebar(fallbackData);
+                                }
+                            }
+                        }
                     } else {
+                        loginInProgress = false;
                         await auth.signOut();
                     }
                 }
@@ -610,6 +671,7 @@
                         window.utils.showNotification('You are currently offline. Login may use cached data.', 'warning');
                     }
 
+                    loginInProgress = true;
                     await auth.signInWithEmailAndPassword(email, password);
                     if (navigator.onLine) await database.ref(`auth_attempts/${emailKey}`).remove();
                 } catch (error) {
