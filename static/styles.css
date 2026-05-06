@@ -2127,9 +2127,10 @@ body.loading-active {
 
 @media (max-width: 480px) {
     .login-card {
-        padding: 24px 18px 22px;
-        max-height: 85dvh;
-        max-height: 85vh;
+        padding: 32px 24px 28px;
+        border-radius: 20px;
+        max-height: 90vh;
+        width: 100%;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
     }
@@ -2143,7 +2144,9 @@ body.loading-active {
     }
 
     .welcome-content {
-        margin: auto 0;
+        width: 100%;
+        max-width: 380px;
+        margin: 0 auto;
     }
 
     .login-header h1 {
